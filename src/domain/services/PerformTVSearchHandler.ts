@@ -1,5 +1,4 @@
 import type { ResolutionContext } from "inversify";
-import { readFileSync } from "node:fs";
 import { getTorznabRssXml } from "../mappers.ts";
 import type { DonTorrentTVAdapter } from "../providers/dontorrent/DonTorrentTVAdapter.ts";
 import type { TMDB } from "../clients/tmdb/TMDB.ts";
@@ -42,7 +41,7 @@ export class PerformTVSearchHandler {
       {
         type: "tv",
         title: "Breaking Bad S01E01 1080p",
-        link: readFileSync("./tests/example-magnet.url", "utf-8").trim(),
+        link: "magnet:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367a88a&dn=Example+File",
         size: 1234567890,
         category: 5040,
         pubDate: "Tue, 22 Jun 2010 06:54:22 +0100",

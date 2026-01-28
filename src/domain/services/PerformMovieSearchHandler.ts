@@ -1,5 +1,3 @@
-import { readFileSync } from "fs";
-import type { TorznabItemMovie } from "../models/TorznabItemMovie.ts";
 import { getTorznabRssXml } from "../mappers.ts";
 import {
   isMovieSearchByTMDB,
@@ -38,7 +36,7 @@ export class PerformMovieSearchHandler {
       {
         type: "movie",
         title: "Interstellar 2014 1080p BluRay",
-        link: readFileSync("./tests/example-magnet.url", "utf-8").trim(),
+        link: "magnet:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367a88a&dn=Example+File",
         size: 2500000000,
         category: 2000,
         pubDate: "Fri, 07 Nov 2014 00:00:00 +0000",
