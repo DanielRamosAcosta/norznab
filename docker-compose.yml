@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - UMASK=022
+    volumes:
+      - ./docker/sonarr/config:/config
+      - ./docker/deluge/downloads:/downloads
+      - ./docker/sonarr/tv:/tv
+    ports:
+      - "8989:8989"
+    networks:
+      - arrs-network
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - UMASK=022
+    volumes:
+      - ./docker/radarr/config:/config
+      - ./docker/deluge/downloads:/downloads
+      - ./docker/radarr/movies:/movies
+    ports:
+      - "7878:7878"
+    networks:
+      - arrs-network
+
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: deluge
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DELUGE_LOGLEVEL=error
+    volumes:
+      - ./docker/deluge/config:/config
+      - ./docker/deluge/downloads:/downloads
+    ports:
+      - "8112:8112"
+      - "6881:6881"
+      - "6881:6881/udp"
+    networks:
+      - arrs-network
+
+networks:
+  arrs-network:
+    driver: bridge

@@ -1,0 +1,3 @@
+const TorznabFunction = {
+  tvsearch: "tvsearch",
+};

@@ -1,0 +1,7 @@
+.playwright-mcp
+node_modules
+docker
+.DS_Store
+.env
+.serena
+data.json

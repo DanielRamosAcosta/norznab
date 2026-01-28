@@ -1,0 +1,40 @@
+{
+  "name": "nixos-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "MCP server for searching NixOS configuration options",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node src/index.ts",
+    "test": "vitest run",
+    "test:unitary": "vitest run --project unitary",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "vitest run --project e2e",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hono/node-server": "^1.12.1",
+    "@ilyamatsuev/tsarr": "^1.9.3",
+    "cheerio": "^1.1.2",
+    "hono": "^4.5.8",
+    "hono-pino": "^0.10.3",
+    "inversify": "^7.11.0",
+    "jstoxml": "^7.0.1",
+    "ky": "^1.14.2",
+    "parse-torrent": "^11.0.19",
+    "zod": "^4.0.14"
+  },
+  "devDependencies": {
+    "@types/jstoxml": "^5.0.0",
+    "@types/node": "^22.10.1",
+    "@types/parse-torrent": "^5.8.8",
+    "@types/ws": "^8.18.1",
+    "prettier": "^3.8.0",
+    "testcontainers": "^11.11.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.17"
+  }
+}
