@@ -80,6 +80,14 @@ describe("DonTorrentScrapper", () => {
     });
   });
 
+  it("getMovieMetadata with DB", async () => {
+    const path = "/pelicula/17842/Asesinato-en-el-Orient-Express";
+
+    const metadata = await donTorrent.getMovieMetadata(path);
+
+    expect(metadata.format).toEqual("BR-Screener");
+  });
+
   it("getShowSeasonMetadata", async () => {
     const path = "/serie/2727/2728/Breaking-Bad-2-Temporada";
 

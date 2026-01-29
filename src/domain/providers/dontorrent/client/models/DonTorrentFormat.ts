@@ -9,6 +9,7 @@ export const DonTorrentFormat = {
   HDRIP: "HDRip",
   DVDRIP: "DVDRip",
   SCREENER: "Screener",
+  BR_SCREENER: "BR-Screener",
   UHD_4K: "4K",
 } as const;
 

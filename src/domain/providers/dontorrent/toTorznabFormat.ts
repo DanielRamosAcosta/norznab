@@ -12,6 +12,7 @@ export function toTorznabFormat(format: DonTorrentFormat): string {
     [DonTorrentFormat.HDRIP]: "720p",
     [DonTorrentFormat.DVDRIP]: "DVDRip",
     [DonTorrentFormat.SCREENER]: "480p",
+    [DonTorrentFormat.BR_SCREENER]: "720p",
     [DonTorrentFormat.UHD_4K]: "2160p",
   };
   return mapping[format];
