@@ -44,6 +44,48 @@ describe("tvsearch", () => {
     expect(data).toContain("Breaking Bad");
   });
 
+  it("searches tv show by text query with season (Sonarr request)", async () => {
+    const client = testClient(app);
+
+    const response = await client.api.$get({
+      query: {
+        t: "tvsearch",
+        cat: "5000,5010,5020,5030,5040,5045,5050,5060,5070,5080",
+        extended: "1",
+        offset: "0",
+        limit: "100",
+        q: "Juego de Tronos",
+        season: "8",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.text();
+    expect(data).toContain("<rss");
+  });
+
+  it("searches tv show by tmdbid with season and episode (Game of Thrones S08E06)", async () => {
+    const client = testClient(app);
+
+    const response = await client.api.$get({
+      query: {
+        t: "tvsearch",
+        cat: "5000,5010,5020,5030,5040,5045,5050,5060,5070,5080",
+        extended: "1",
+        offset: "0",
+        limit: "100",
+        tmdbid: "1399", // Game of Thrones
+        season: "8",
+        ep: "6",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.text();
+    expect(data).toContain("<rss");
+    expect(data).toContain("<item>");
+  });
+
   it("returns error for unknown function type", async () => {
     const client = testClient(app);
 

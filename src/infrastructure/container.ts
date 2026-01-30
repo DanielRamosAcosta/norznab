@@ -5,8 +5,10 @@ import { DonTorrentScrapper } from "../domain/providers/dontorrent/client/DonTor
 import { DonTorrentWrapper } from "../domain/providers/dontorrent/DonTorrentWrapper.ts";
 import { DonTorrentTVAdapter } from "../domain/providers/dontorrent/DonTorrentTVAdapter.ts";
 import { DonTorrentMovieAdapter } from "../domain/providers/dontorrent/DonTorrentMovieAdapter.ts";
-import { RequestHandler } from "../domain/services/RequestHandler.ts";
+import { RequestHandler } from "../domain/handlers/RequestHandler.ts";
 import { DonTorrentScrapperLocalCache } from "../domain/providers/dontorrent/client/DonTorrentScrapperLocalCache.ts";
+import { LoggerPino } from "../domain/services/LoggerPino.ts";
+import { TVMaze } from "../domain/clients/tvmaze/TVMaze.ts";
 
 export const container = new Container({
   defaultScope: bindingScopeValues.Singleton,
@@ -14,6 +16,7 @@ export const container = new Container({
 
 // Clients
 container.bind(Token.TMDB).toDynamicValue(TMDB.create);
+container.bind(Token.TVMAZE).toDynamicValue(TVMaze.create);
 
 // Providers
 container
@@ -28,6 +31,7 @@ container
 container
   .bind(Token.DONTORRENT_MOVIE_ADAPTER)
   .toDynamicValue(DonTorrentMovieAdapter.create);
+container.bind(Token.LOGGER).toDynamicValue(LoggerPino.create);
 
 // Domain
 container.bind(Token.REQUEST_HANDLER).toDynamicValue(RequestHandler.create);

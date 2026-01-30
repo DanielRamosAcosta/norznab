@@ -2,10 +2,7 @@ import type { ResolutionContext } from "inversify";
 import parseTorrent, { toMagnetURI } from "parse-torrent";
 import { filterEmpty } from "../../utils/filterNull.ts";
 import type { DonTorrentWrapper } from "./DonTorrentWrapper.ts";
-import {
-  isMovie,
-  type DonTorrentSearchResult,
-} from "./client/models/DonTorrentSearchResult.ts";
+import { DonTorrentSearchResult } from "./client/models/DonTorrentSearchResult.ts";
 import { Token } from "../../Token.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import { toTorznabFormat } from "./toTorznabFormat.ts";
@@ -26,7 +23,7 @@ export class DonTorrentMovieAdapter {
 
   async findMovie(movieName: string): Promise<TorznabItemMovie[]> {
     const results = await this.donTorrent.searchAll(movieName);
-    const movies = results.filter(isMovie);
+    const movies = results.filter((r) => r.isMovie());
     const moviesAndMeta = await Promise.all(
       movies.map((m) => this.extractMovie(movieName, m)),
     );

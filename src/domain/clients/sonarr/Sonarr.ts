@@ -247,12 +247,14 @@ export class Sonarr {
 
   async flushQueue(): Promise<void> {
     const queue = await this.getQueue();
-    if (queue.records) {
-      for (const item of queue.records) {
-        if (item.id) {
-          await this.deleteQueueItem(item.id);
-        }
-      }
+    let records = queue.records ?? [];
+
+    while (records.length > 1) {
+      const id = records[0].id;
+      id && (await this.deleteQueueItem(id));
+
+      const queue = await this.getQueue();
+      records = queue.records ?? [];
     }
   }
 }

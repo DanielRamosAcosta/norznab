@@ -2,28 +2,26 @@ import { Hono } from "hono";
 import { ZodError } from "zod";
 import { toXML } from "jstoxml";
 import { pinoLogger } from "hono-pino";
+import { requestId } from "hono/request-id";
 import {
   TorznabErrorCode,
   type TorznabErrorCodeValue,
 } from "../../domain/models/TorznabErrorCode.ts";
+import { contextStorage } from "hono/context-storage";
 import { ApiError } from "../../domain/models/ApiError.ts";
 import { QuerySchema } from "../../domain/schemas/QuerySchema.ts";
 import { container } from "../container.ts";
 import { containerMiddleware } from "./middlewares/ContainerMiddleware.ts";
 import { Token } from "../../domain/Token.ts";
-import type { RequestHandler } from "../../domain/services/RequestHandler.ts";
+import type { RequestHandler } from "../../domain/handlers/RequestHandler.ts";
+import { loggerPinoOptions } from "../../domain/services/LoggerPinoOptions.ts";
 
 export const app = new Hono()
+  .use(contextStorage())
+  .use("*", requestId()) // `Your request id is ${c.get('requestId')}`
   .use(containerMiddleware(container))
-  .use(
-    pinoLogger({
-      pino: {
-        level: process.env.NODE_ENV === "test" ? "silent" : "debug",
-      },
-    }),
-  )
+  .use(pinoLogger({ pino: loggerPinoOptions }))
   .get("/api", async (c) => {
-    c.var.logger.debug({ message: "Incoming request", query: c.req.query() });
     const params = QuerySchema.parse(c.req.query());
 
     const requestHandler = await c.var.container.getAsync<RequestHandler>(

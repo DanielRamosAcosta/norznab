@@ -29,6 +29,8 @@ export const CommandSchema = z.object({
   lastDuration: z.string().nullable().optional(),
   nextExecution: z.string().nullable().optional(),
   episodeIds: z.array(z.number()).nullable().optional(),
+  seriesId: z.number().optional(),
+  seasonNumber: z.number().optional(),
 }).strict();
 
 export type Command = z.infer<typeof CommandSchema>;

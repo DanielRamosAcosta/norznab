@@ -31,7 +31,7 @@ export class DonTorrentWrapper {
     return [...result.items, ...nextItems];
   }
 
-  getShowSeasonMetadata(path: string) {
+  getShowMetadata(path: string) {
     return this.scrapper.getShowSeasonMetadata(path);
   }
 

@@ -1,13 +1,13 @@
 import type { DonTorrentFormat } from "./DonTorrentFormat.ts";
-
-export type DonTorrentEpisodeMetadata = {
-  contentId: number;
-  table: string;
-  title: string;
-  date: string;
-};
+import { DonTorrentEpisodeMetadata } from "./DonTorrentEpisodeMetadata.ts";
+import { EpisodeEntry } from "./EpisodeEntry.ts";
 
 export type DonTorrentShowSeasonMetadata = {
+  name: string;
   format: DonTorrentFormat;
   episodes: DonTorrentEpisodeMetadata[];
 };
+
+export function toEntries(metadata: DonTorrentShowSeasonMetadata) {
+  return metadata.episodes.map((e) => EpisodeEntry.parse(e, metadata.format));
+}

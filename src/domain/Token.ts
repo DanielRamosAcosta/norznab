@@ -7,6 +7,7 @@ export const Token = {
   DONTORRENT_WRAPPER: "DONTORRENT_WRAPPER",
   DONTORRENT_TV_ADAPTER: "DONTORRENT_TV_ADAPTER",
   DONTORRENT_MOVIE_ADAPTER: "DONTORRENT_MOVIE_ADAPTER",
+  LOGGER: "LOGGER",
 } as const;
 
 export type Token = (typeof Token)[keyof typeof Token];

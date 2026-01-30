@@ -118,7 +118,10 @@ export class Radarr {
     return this.post("api/v3/movie", movie, MovieSchema);
   }
 
-  async updateMovie(id: string | number, movie: Partial<Movie>): Promise<Movie> {
+  async updateMovie(
+    id: string | number,
+    movie: Partial<Movie>,
+  ): Promise<Movie> {
     return this.put(`api/v3/movie/${id}`, movie, MovieSchema);
   }
 

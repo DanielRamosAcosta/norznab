@@ -11,7 +11,7 @@ export class GetCapabilitiesHandler {
                 "tv-search": {
                   _attrs: {
                     available: "yes",
-                    supportedParams: "q,tmdbid,season,ep",
+                    supportedParams: "q,tmdbid,rid,tvdbid,tvmazeid,season,ep",
                   },
                 },
               },

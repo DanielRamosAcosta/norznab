@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import type { DonTorrent } from "./DonTorrent.ts";
-import type { DonTorrentSearchResult } from "./models/DonTorrentSearchResult.ts";
+import { DonTorrentSearchResult } from "./models/DonTorrentSearchResult.ts";
 import type { DonTorrentShowSeasonMetadata } from "./models/DonTorrentShowSeasonMetadata.ts";
+import { DonTorrentEpisodeMetadata } from "./models/DonTorrentEpisodeMetadata.ts";
 import type { DonTorrentMovieMetadata } from "./models/DonTorrentMovieMetadata.ts";
 import type { DonTorrentPageable } from "./models/DonTorrentPageable.ts";
 
@@ -40,7 +41,15 @@ export class DonTorrentScrapperLocalCache implements DonTorrent {
   ): Promise<DonTorrentPageable<DonTorrentSearchResult>> {
     const key = this.getCacheKey("search", query, page);
     if (key in this.cache) {
-      return this.cache[key] as DonTorrentPageable<DonTorrentSearchResult>;
+      const cached = this.cache[
+        key
+      ] as DonTorrentPageable<DonTorrentSearchResult>;
+      return {
+        ...cached,
+        items: cached.items.map(
+          (r) => new DonTorrentSearchResult(r.path, r.name, r.type),
+        ),
+      };
     }
     const result = await this.delegate.search(query, page);
     this.cache[key] = result;
@@ -53,7 +62,19 @@ export class DonTorrentScrapperLocalCache implements DonTorrent {
   ): Promise<DonTorrentShowSeasonMetadata> {
     const key = this.getCacheKey("getShowSeasonMetadata", path);
     if (key in this.cache) {
-      return this.cache[key] as DonTorrentShowSeasonMetadata;
+      const cached = this.cache[key] as DonTorrentShowSeasonMetadata;
+      return {
+        ...cached,
+        episodes: cached.episodes.map(
+          (e) =>
+            new DonTorrentEpisodeMetadata({
+              contentId: e.contentId,
+              table: e.table,
+              title: e.title,
+              date: e.date,
+            }),
+        ),
+      };
     }
     const result = await this.delegate.getShowSeasonMetadata(path);
     this.cache[key] = result;

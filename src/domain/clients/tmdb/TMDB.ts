@@ -63,4 +63,17 @@ export class TMDB {
 
     return GetMovieResponseSchema.parse(data);
   }
+
+  async searchTvShows(query: string): Promise<SearchTVResponse> {
+    const data = await this.client
+      .get("search/tv", {
+        searchParams: {
+          query,
+          language: this.language,
+        },
+      })
+      .json();
+
+    return SearchTVResponseSchema.parse(data);
+  }
 }

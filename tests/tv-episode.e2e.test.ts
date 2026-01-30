@@ -10,7 +10,7 @@ import { serveRandom, type ServerInfo } from "./utils/serveRandom.ts";
 import { waitFor } from "./utils/waitFor.ts";
 import { createIndexer } from "./factories/createIndexer.ts";
 
-describe("Norznab TV E2E Integration", { timeout: 180_000 }, () => {
+describe("TV Episode Search", { timeout: 180_000 }, () => {
   let sonarr: Sonarr;
   let serverInfo: ServerInfo;
   let sonarrContainer: StartedTestContainer;

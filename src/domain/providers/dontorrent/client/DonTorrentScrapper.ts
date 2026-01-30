@@ -4,8 +4,9 @@ import type { CheerioAPI } from "cheerio";
 import * as cheerio from "cheerio";
 import { parseDonTorrentMediaType } from "./models/DonTorrentMediaType.ts";
 import { parseDonTorrentFormat } from "./models/DonTorrentFormat.ts";
-import type { DonTorrentSearchResult } from "./models/DonTorrentSearchResult.ts";
+import { DonTorrentSearchResult } from "./models/DonTorrentSearchResult.ts";
 import type { DonTorrentShowSeasonMetadata } from "./models/DonTorrentShowSeasonMetadata.ts";
+import { DonTorrentEpisodeMetadata } from "./models/DonTorrentEpisodeMetadata.ts";
 import type { DonTorrentMovieMetadata } from "./models/DonTorrentMovieMetadata.ts";
 import type {
   DonTorrentPageable,
@@ -24,7 +25,7 @@ export class DonTorrentScrapper implements DonTorrent {
 
   constructor() {
     this.client = ky.create({
-      prefixUrl: "https://dontorrent.info",
+      prefixUrl: "https://dontorrent.promo",
       retry: 0,
     });
   }
@@ -57,21 +58,13 @@ export class DonTorrentScrapper implements DonTorrent {
     size: number,
     page: number,
   ): DonTorrentPageableMeta {
-    const totalItemsText = $(
-      ".card-body p.lead:contains('resultados') b",
-    ).text();
-    const totalItems = parseInt(totalItemsText, 10) || 0;
-    const totalPages =
-      Math.ceil(totalItems / DonTorrentScrapper.PAGE_SIZE) || 1;
-    const hasNext = page < totalPages - 1;
-    const hasPrevious = page > 0;
+    const lastPageItem = $("nav.page-navigator li:last-child");
+    const hasNext = !lastPageItem.hasClass("disabled");
+
     return {
       page,
       size,
-      totalItems,
-      totalPages,
       hasNext,
-      hasPrevious,
     };
   }
 
@@ -84,11 +77,11 @@ export class DonTorrentScrapper implements DonTorrent {
         const $badge = $p.find(".badge");
         const name = $el.text().trim();
 
-        const result: DonTorrentSearchResult = {
-          path: $el.attr("href") || "",
-          name: name,
-          type: parseDonTorrentMediaType($badge.text().trim()),
-        };
+        const result = new DonTorrentSearchResult(
+          $el.attr("href") || "",
+          name,
+          parseDonTorrentMediaType($badge.text().trim()),
+        );
 
         return result;
       });
@@ -101,6 +94,7 @@ export class DonTorrentScrapper implements DonTorrent {
     const html = await response.text();
     const $ = cheerio.load(html);
 
+    const name = $("h2.descargarTitulo").text().trim();
     const formatText = $("p:contains('Formato:')")
       .text()
       .replace("Formato:", "")
@@ -117,15 +111,15 @@ export class DonTorrentScrapper implements DonTorrent {
         const contentId = parseInt($downloadBtn.data("content-id") as string);
         const table = $downloadBtn.data("tabla") as string;
         const date = $cells.eq(2).text().trim();
-        return {
+        return new DonTorrentEpisodeMetadata({
           contentId,
           table,
           title,
           date,
-        };
+        });
       });
 
-    return { format, episodes };
+    return { name, format, episodes };
   }
 
   async getMovieMetadata(path: string): Promise<DonTorrentMovieMetadata> {

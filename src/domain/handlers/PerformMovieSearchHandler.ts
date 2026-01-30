@@ -1,4 +1,3 @@
-import { getTorznabRssXml } from "../mappers.ts";
 import {
   isMovieSearchByTMDB,
   type MovieSearchRequest,
@@ -7,6 +6,7 @@ import type { TMDB } from "../clients/tmdb/TMDB.ts";
 import type { DonTorrentMovieAdapter } from "../providers/dontorrent/DonTorrentMovieAdapter.ts";
 import { Token } from "../Token.ts";
 import type { ResolutionContext } from "inversify";
+import type { TorznabItemMovie } from "../models/TorznabItemMovie.ts";
 
 export class PerformMovieSearchHandler {
   private readonly tmdb: TMDB;
@@ -25,14 +25,13 @@ export class PerformMovieSearchHandler {
     this.donTorrentAdapter = donTorrentAdapter;
   }
 
-  async handle(request: MovieSearchRequest) {
+  async handle(request: MovieSearchRequest): Promise<TorznabItemMovie[]> {
     if (isMovieSearchByTMDB(request)) {
       const movie = await this.tmdb.getMovie(request.tmdbid);
-      const movies = await this.donTorrentAdapter.findMovie(movie.title);
-      return getTorznabRssXml(movies);
+      return await this.donTorrentAdapter.findMovie(movie.title);
     }
 
-    return getTorznabRssXml([
+    return [
       {
         type: "movie",
         title: "Interstellar 2014 1080p BluRay",
@@ -44,6 +43,6 @@ export class PerformMovieSearchHandler {
         imdbtitle: "Interstellar",
         imdbyear: "2014",
       },
-    ]);
+    ];
   }
 }
