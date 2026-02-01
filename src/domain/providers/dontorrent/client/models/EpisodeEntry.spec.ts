@@ -82,6 +82,14 @@ describe("EpisodeEntry", () => {
       expect(result).toBeInstanceOf(EpisodeEntrySeasonRange);
     });
 
+    it("parses single complete season", () => {
+      const metadata = episodeMetadata({ title: "Temporada 2 Completa (SUB ESP)" });
+
+      const result = EpisodeEntry.parse(metadata, format);
+
+      expect(result).toBeInstanceOf(EpisodeEntrySeasonRange);
+    });
+
     it("throws error for unparseable format", () => {
       const metadata = episodeMetadata({ title: "Invalid Format" });
 
@@ -221,6 +229,16 @@ describe("EpisodeEntry", () => {
 
   describe("EpisodeEntrySeasonRange", () => {
     describe("matches", () => {
+      it("matches single complete season", () => {
+        const metadata = episodeMetadata({ title: "Temporada 2 Completa (SUB ESP)" });
+        const entry = EpisodeEntry.parse(metadata, format) as EpisodeEntrySeasonRange;
+        const criteria = new SearchCriteriaSeason("Show", 2);
+
+        const result = entry.matches(criteria);
+
+        expect(result).toBe(true);
+      });
+
       it("matches when season is in range", () => {
         const metadata = episodeMetadata({ title: "Temporada 1-3 Completas" });
         const entry = new EpisodeEntrySeasonRange(metadata, format, 1, 3);

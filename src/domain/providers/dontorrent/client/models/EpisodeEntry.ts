@@ -38,6 +38,15 @@ export abstract class EpisodeEntry {
       );
     }
 
+    // Try to match single complete season format: "Temporada 2 Completa (SUB ESP)"
+    const singleSeasonMatch = metadata.title.match(
+      /^Temporada\s+(\d+)\s+Completa/i,
+    );
+    if (singleSeasonMatch) {
+      const season = parseInt(singleSeasonMatch[1], 10);
+      return new EpisodeEntrySeasonRange(metadata, format, season, season);
+    }
+
     // Try to match pack format: "1x01 al 1x07" (supports both x and × case insensitive)
     const packMatch = metadata.title.match(
       /^(\d)+[x×](\d+)\s+al\s+(\d+)[x×](\d+)/i,
