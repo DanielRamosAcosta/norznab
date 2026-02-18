@@ -10,6 +10,8 @@ export const CapsRequestSchema = z
 
 export type CapabilitiesRequest = z.infer<typeof CapsRequestSchema>;
 
-export function isCapabilitiesRequest(req: { t: string }): req is CapabilitiesRequest {
+export function isCapabilitiesRequest(req: {
+  t: string;
+}): req is CapabilitiesRequest {
   return req.t === TorznabFunction.CAPS;
 }

@@ -363,16 +363,20 @@ All Zod schemas must use `.strict()` to catch unexpected fields early:
 
 ```typescript
 // ✓ Correct
-const UserSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-}).strict();
+const UserSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+  })
+  .strict();
 
 // ✗ Wrong - never use passthrough
-const UserSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-}).passthrough();
+const UserSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+  })
+  .passthrough();
 ```
 
 ### Prefer Required Over Optional
@@ -381,16 +385,20 @@ Always prefer required fields over optional ones. Only use `.optional()` when th
 
 ```typescript
 // ✓ Correct - field is always present
-const MovieSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-}).strict();
+const MovieSchema = z
+  .object({
+    id: z.number(),
+    title: z.string(),
+  })
+  .strict();
 
 // ✗ Wrong - making everything optional "just in case"
-const MovieSchema = z.object({
-  id: z.number().optional(),
-  title: z.string().optional(),
-}).strict();
+const MovieSchema = z
+  .object({
+    id: z.number().optional(),
+    title: z.string().optional(),
+  })
+  .strict();
 ```
 
 ### When External APIs Return Unknown Fields
@@ -399,13 +407,17 @@ If an external API returns fields not in your schema, add them explicitly rather
 
 ```typescript
 // ✓ Correct - add the new field
-const ResponseSchema = z.object({
-  data: z.string(),
-  newField: z.boolean().optional(), // Add explicitly
-}).strict();
+const ResponseSchema = z
+  .object({
+    data: z.string(),
+    newField: z.boolean().optional(), // Add explicitly
+  })
+  .strict();
 
 // ✗ Wrong - using passthrough to ignore unknown fields
-const ResponseSchema = z.object({
-  data: z.string(),
-}).passthrough();
+const ResponseSchema = z
+  .object({
+    data: z.string(),
+  })
+  .passthrough();
 ```

@@ -5,7 +5,10 @@ import type { DonTorrentMovieMetadata } from "./models/DonTorrentMovieMetadata.t
 import type { DonTorrentPageable } from "./models/DonTorrentPageable.ts";
 
 export class DonTorrentUnimplemented implements DonTorrent {
-  search(_query: string, _page?: number): Promise<DonTorrentPageable<DonTorrentSearchResult>> {
+  search(
+    _query: string,
+    _page?: number,
+  ): Promise<DonTorrentPageable<DonTorrentSearchResult>> {
     throw new Error("DonTorrent.search not implemented");
   }
 

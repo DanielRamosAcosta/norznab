@@ -48,7 +48,7 @@ export class DonTorrentMovieAdapter implements MovieAdapter {
 
     return {
       type: "movie",
-      title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)}`,
+      title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)} - DonTorrent`,
       link: link,
       size: "length" in parsed ? (parsed.length ?? 0) : 0,
       category: 2000,

@@ -6,9 +6,7 @@
       "type": "node",
       "request": "launch",
       "program": "src/index.ts",
-      "runtimeArgs": [
-        "--env-file=${workspaceFolder}/.env"
-      ],
+      "runtimeArgs": ["--env-file=${workspaceFolder}/.env"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     }

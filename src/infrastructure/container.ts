@@ -46,8 +46,12 @@ container
   .toDynamicValue(MarcianoTorrentWrapper.create);
 
 // Movie adapters (multi-bind — getAllAsync returns both)
-container.bind(Token.MOVIE_ADAPTER).toDynamicValue(DonTorrentMovieAdapter.create);
-container.bind(Token.MOVIE_ADAPTER).toDynamicValue(MarcianoTorrentMovieAdapter.create);
+container
+  .bind(Token.MOVIE_ADAPTER)
+  .toDynamicValue(DonTorrentMovieAdapter.create);
+container
+  .bind(Token.MOVIE_ADAPTER)
+  .toDynamicValue(MarcianoTorrentMovieAdapter.create);
 
 container.bind(Token.LOGGER).toDynamicValue(LoggerPino.create);
 

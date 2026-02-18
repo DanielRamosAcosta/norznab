@@ -83,7 +83,9 @@ describe("EpisodeEntry", () => {
     });
 
     it("parses single complete season", () => {
-      const metadata = episodeMetadata({ title: "Temporada 2 Completa (SUB ESP)" });
+      const metadata = episodeMetadata({
+        title: "Temporada 2 Completa (SUB ESP)",
+      });
 
       const result = EpisodeEntry.parse(metadata, format);
 
@@ -141,7 +143,6 @@ describe("EpisodeEntry", () => {
         expect(result).toBe(false);
       });
     });
-
   });
 
   describe("EpisodeEntryEpisodeRange", () => {
@@ -224,14 +225,18 @@ describe("EpisodeEntry", () => {
         expect(result).toBe(false);
       });
     });
-
   });
 
   describe("EpisodeEntrySeasonRange", () => {
     describe("matches", () => {
       it("matches single complete season", () => {
-        const metadata = episodeMetadata({ title: "Temporada 2 Completa (SUB ESP)" });
-        const entry = EpisodeEntry.parse(metadata, format) as EpisodeEntrySeasonRange;
+        const metadata = episodeMetadata({
+          title: "Temporada 2 Completa (SUB ESP)",
+        });
+        const entry = EpisodeEntry.parse(
+          metadata,
+          format,
+        ) as EpisodeEntrySeasonRange;
         const criteria = new SearchCriteriaSeason("Show", 2);
 
         const result = entry.matches(criteria);
@@ -299,6 +304,5 @@ describe("EpisodeEntry", () => {
         expect(result).toBe(false);
       });
     });
-
   });
 });

@@ -4,10 +4,7 @@ import { DonTorrentWrapper } from "./DonTorrentWrapper.ts";
 import { DonTorrentScrapperLocalCache } from "./client/DonTorrentScrapperLocalCache.ts";
 import { LoggerNoop } from "../../services/LoggerNoop.ts";
 import { DonTorrentScrapper } from "./client/DonTorrentScrapper.ts";
-import {
-  SearchCriteriaEpisode,
-  SearchCriteriaSeason,
-} from "./Criterias.ts";
+import { SearchCriteriaEpisode, SearchCriteriaSeason } from "./Criterias.ts";
 
 describe("DonTorrentTVAdapter", () => {
   let adapter: DonTorrentTVAdapter;

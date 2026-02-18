@@ -58,7 +58,8 @@ export class MarcianoTorrentScrapper implements MarcianoTorrent {
         const $a = $el.find("a").first();
         const href = $a.attr("href") ?? "";
         const quality = $a.find("div.media-info span").text().trim();
-        const title = $a.find("img").attr("alt")?.replace(/\.$/, "").trim() ?? "";
+        const title =
+          $a.find("img").attr("alt")?.replace(/\.$/, "").trim() ?? "";
         return new MarcianoTorrentSearchResult(title, quality, href);
       });
   }
@@ -83,7 +84,10 @@ export class MarcianoTorrentScrapper implements MarcianoTorrent {
     const year = parseInt(
       $('a[href*="filtros/year/"] span').first().text().trim(),
     );
-    const formatText = $('a[href*="filtros/quality/"] span').first().text().trim();
+    const formatText = $('a[href*="filtros/quality/"] span')
+      .first()
+      .text()
+      .trim();
     const format = parseMarcianoTorrentFormat(formatText);
     const torrentPath = $('a[href$=".torrent"]').attr("href") ?? "";
 
@@ -95,7 +99,10 @@ export class MarcianoTorrentScrapper implements MarcianoTorrent {
       ? `${this.baseUrl}${torrentPath}`
       : torrentPath;
     const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0" },
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0",
+      },
     });
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);

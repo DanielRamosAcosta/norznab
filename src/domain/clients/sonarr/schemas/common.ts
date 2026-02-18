@@ -51,28 +51,36 @@ export const PrivacySchema = z
   .default("normal");
 
 // Common nested types
-export const MediaCoverSchema = z.object({
-  coverType: z.string().optional(),
-  url: z.string().optional(),
-  remoteUrl: z.string().nullable().optional(),
-}).strict();
+export const MediaCoverSchema = z
+  .object({
+    coverType: z.string().optional(),
+    url: z.string().optional(),
+    remoteUrl: z.string().nullable().optional(),
+  })
+  .strict();
 
-export const RatingsSchema = z.object({
-  votes: z.number().optional(),
-  value: z.number().optional(),
-}).strict();
+export const RatingsSchema = z
+  .object({
+    votes: z.number().optional(),
+    value: z.number().optional(),
+  })
+  .strict();
 
-export const LanguageSchema = z.object({
-  id: z.number().optional(),
-  name: z.string().optional(),
-}).strict();
+export const LanguageSchema = z
+  .object({
+    id: z.number().optional(),
+    name: z.string().optional(),
+  })
+  .strict();
 
-export const SelectOptionSchema = z.object({
-  value: z.unknown().optional(),
-  name: z.string().nullable().optional(),
-  order: z.number().optional(),
-  hint: z.string().nullable().optional(),
-}).strict();
+export const SelectOptionSchema = z
+  .object({
+    value: z.unknown().optional(),
+    name: z.string().nullable().optional(),
+    order: z.number().optional(),
+    hint: z.string().nullable().optional(),
+  })
+  .strict();
 
 // Type exports
 export type Protocol = z.infer<typeof ProtocolSchema>;

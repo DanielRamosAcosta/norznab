@@ -19,10 +19,7 @@ export class SeasonEpisodeRange {
     );
   }
 
-  static fromVOs(
-    start: SeasonEpisode,
-    end: SeasonEpisode,
-  ): SeasonEpisodeRange {
+  static fromVOs(start: SeasonEpisode, end: SeasonEpisode): SeasonEpisodeRange {
     return new SeasonEpisodeRange(start, end);
   }
 

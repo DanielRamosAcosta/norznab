@@ -4,7 +4,10 @@ import type { DonTorrentMovieMetadata } from "./models/DonTorrentMovieMetadata.t
 import type { DonTorrentPageable } from "./models/DonTorrentPageable.ts";
 
 export interface DonTorrent {
-  search(query: string, page?: number): Promise<DonTorrentPageable<DonTorrentSearchResult>>;
+  search(
+    query: string,
+    page?: number,
+  ): Promise<DonTorrentPageable<DonTorrentSearchResult>>;
   getShowSeasonMetadata(path: string): Promise<DonTorrentShowSeasonMetadata>;
   getMovieMetadata(path: string): Promise<DonTorrentMovieMetadata>;
   contentToUrl(contentId: number, table: string): Promise<string>;
