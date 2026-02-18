@@ -3,32 +3,46 @@ import {
   type MovieSearchRequest,
 } from "../schemas/MovieSearchRequestSchema.ts";
 import type { TMDB } from "../clients/tmdb/TMDB.ts";
-import type { DonTorrentMovieAdapter } from "../providers/dontorrent/DonTorrentMovieAdapter.ts";
+import type { MovieAdapter } from "../providers/MovieAdapter.ts";
 import { Token } from "../Token.ts";
 import type { ResolutionContext } from "inversify";
 import type { TorznabItemMovie } from "../models/TorznabItemMovie.ts";
+import type { Logger } from "../services/Logger.ts";
 
 export class PerformMovieSearchHandler {
   private readonly tmdb: TMDB;
-  private readonly donTorrentAdapter: DonTorrentMovieAdapter;
+  private readonly movieAdapters: MovieAdapter[];
+  private readonly logger: Logger;
 
   public static async create(context: ResolutionContext) {
-    const [tmdb, donTorrentAdapter] = await Promise.all([
+    const [tmdb, movieAdapters, logger] = await Promise.all([
       context.getAsync<TMDB>(Token.TMDB),
-      context.getAsync<DonTorrentMovieAdapter>(Token.DONTORRENT_MOVIE_ADAPTER),
+      context.getAllAsync<MovieAdapter>(Token.MOVIE_ADAPTER),
+      context.getAsync<Logger>(Token.LOGGER),
     ]);
-    return new PerformMovieSearchHandler(tmdb, donTorrentAdapter);
+    return new PerformMovieSearchHandler(tmdb, movieAdapters, logger);
   }
 
-  constructor(tmdb: TMDB, donTorrentAdapter: DonTorrentMovieAdapter) {
+  constructor(tmdb: TMDB, movieAdapters: MovieAdapter[], logger: Logger) {
     this.tmdb = tmdb;
-    this.donTorrentAdapter = donTorrentAdapter;
+    this.movieAdapters = movieAdapters;
+    this.logger = logger.forClass(PerformMovieSearchHandler.name);
+  }
+
+  private catchError(error: unknown): TorznabItemMovie[] {
+    this.logger.error("Movie adapter failed", error);
+    return [];
   }
 
   async handle(request: MovieSearchRequest): Promise<TorznabItemMovie[]> {
     if (isMovieSearchByTMDB(request)) {
       const movie = await this.tmdb.getMovie(request.tmdbid);
-      return await this.donTorrentAdapter.findMovie(movie.title);
+      const results = await Promise.all(
+        this.movieAdapters.map((adapter) =>
+          adapter.findMovie(movie.title).catch(this.catchError.bind(this)),
+        ),
+      );
+      return results.flat();
     }
 
     return [

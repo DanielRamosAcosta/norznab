@@ -6,8 +6,9 @@ import { DonTorrentSearchResult } from "./client/models/DonTorrentSearchResult.t
 import { Token } from "../../Token.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import { toTorznabFormat } from "./toTorznabFormat.ts";
+import type { MovieAdapter } from "../MovieAdapter.ts";
 
-export class DonTorrentMovieAdapter {
+export class DonTorrentMovieAdapter implements MovieAdapter {
   private readonly donTorrent: DonTorrentWrapper;
 
   public static async create(context: ResolutionContext) {

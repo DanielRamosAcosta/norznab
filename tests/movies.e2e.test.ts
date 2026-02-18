@@ -29,6 +29,9 @@ describe("Movie E2E Search", { timeout: 180_000 }, () => {
     await radarr.flushQueue();
     await radarr.deleteAllIndexers();
     await radarr.deleteAllMovies();
+    const indexer = createIndexer(serverInfo.port);
+    await radarr.testIndexer(indexer);
+    await radarr.addIndexer(indexer);
   });
 
   afterAll(async () => {
@@ -39,16 +42,43 @@ describe("Movie E2E Search", { timeout: 180_000 }, () => {
     await radarrContainer?.stop();
   });
 
-  // Skipped: Radarr requires external API access to api.radarr.video for movie lookup.
-  // Corporate proxy (CN=core1.netops.test) intercepts SSL connections with self-signed certificate.
-  // Host machine has proxy certs installed, but Docker containers don't, causing SSL validation failures.
-  // From NAS: api.radarr.video is unreachable (100% packet loss), possibly due to ISP/geo-blocking.
-  test.skip("search interstellar movie", async () => {
-    const indexer = createIndexer(serverInfo.port);
+  test("search a silent voice movie", async () => {
+    const [aSilentVoice] = await radarr.searchMovie("a silent voice");
 
-    await radarr.testIndexer(indexer);
-    await radarr.addIndexer(indexer);
+    const addedMovie = await radarr.addMovie({
+      title: aSilentVoice.title,
+      tmdbId: aSilentVoice.tmdbId,
+      titleSlug: aSilentVoice.titleSlug,
+      images: aSilentVoice.images,
+      qualityProfileId: 1,
+      monitored: true,
+      path: "/movies/a-silent-voice",
+      minimumAvailability: "released",
+    });
 
+    await waitFor(
+      async () => {
+        const movie = await radarr.getMovieById(addedMovie.id!);
+        expect(movie.alternateTitles?.length).toBeGreaterThan(0);
+      },
+      { timeout: 15_000 },
+    );
+
+    await radarr.runCommand({
+      name: "MoviesSearch",
+      movieIds: [addedMovie.id!],
+    });
+
+    await waitFor(
+      async () => {
+        const queue = await radarr.getQueue();
+        expect(queue.records?.length).toBeGreaterThan(0);
+      },
+      { timeout: 20_000 },
+    );
+  });
+
+  test("search interstellar movie", async () => {
     const [interstellar] = await radarr.searchMovie("interstellar");
 
     const addedMovie = await radarr.addMovie({
@@ -61,6 +91,14 @@ describe("Movie E2E Search", { timeout: 180_000 }, () => {
       path: "/movies/interstellar",
       minimumAvailability: "released",
     });
+
+    await waitFor(
+      async () => {
+        const movie = await radarr.getMovieById(addedMovie.id!);
+        expect(movie.alternateTitles?.length).toBeGreaterThan(0);
+      },
+      { timeout: 15_000 },
+    );
 
     await radarr.runCommand({
       name: "MoviesSearch",

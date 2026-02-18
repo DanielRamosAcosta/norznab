@@ -5,3 +5,4 @@ docker
 .env
 .serena
 data.json
+*data.json
