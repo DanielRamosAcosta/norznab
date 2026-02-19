@@ -8,6 +8,7 @@ export function toTorznabFormat(format: MarcianoTorrentFormat): string {
     [MarcianoTorrentFormat.UHD_4K]: "2160p",
     [MarcianoTorrentFormat.MICROHD_1080P]: "1080p",
     [MarcianoTorrentFormat.BLURAY_1080P]: "1080p",
+    [MarcianoTorrentFormat.BDREMUX_1080P]: "1080p",
   };
   return mapping[format];
 }
