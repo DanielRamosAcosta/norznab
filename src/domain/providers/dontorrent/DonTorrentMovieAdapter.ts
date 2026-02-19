@@ -52,7 +52,9 @@ export class DonTorrentMovieAdapter implements MovieAdapter {
       link: link,
       size: "length" in parsed ? (parsed.length ?? 0) : 0,
       category: 2000,
-      pubDate: "Fri, 07 Nov 2014 00:00:00 +0000",
+      pubDate: (
+        ("created" in parsed ? parsed.created : undefined) ?? new Date()
+      ).toUTCString(),
     };
   }
 }

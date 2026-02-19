@@ -30,7 +30,7 @@ export class PerformMovieSearchHandler {
   }
 
   private catchError(error: unknown): TorznabItemMovie[] {
-    this.logger.error("Movie adapter failed", error);
+    this.logger.error("Movie adapter failed", { err: error });
     return [];
   }
 

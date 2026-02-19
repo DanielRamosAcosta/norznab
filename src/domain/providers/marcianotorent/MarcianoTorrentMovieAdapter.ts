@@ -45,7 +45,9 @@ export class MarcianoTorrentMovieAdapter implements MovieAdapter {
       link,
       size: "length" in parsed ? (parsed.length ?? 0) : 0,
       category: 2000,
-      pubDate: new Date().toUTCString(),
+      pubDate: (
+        ("created" in parsed ? parsed.created : undefined) ?? new Date()
+      ).toUTCString(),
     };
   }
 }
