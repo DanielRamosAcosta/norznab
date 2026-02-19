@@ -41,7 +41,7 @@ export class MarcianoTorrentMovieAdapter implements MovieAdapter {
 
     return {
       type: "movie",
-      title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)} - MarcianoTorrent`,
+      title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)} - MarcianoTorrent - (${metadata.format})`,
       link,
       size: "length" in parsed ? (parsed.length ?? 0) : 0,
       category: 2000,
