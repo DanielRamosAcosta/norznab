@@ -1,4 +1,5 @@
 import { Container, bindingScopeValues } from "inversify";
+import { config } from "./config.ts";
 import { Token } from "../domain/Token.ts";
 import { TMDB } from "../domain/clients/tmdb/TMDB.ts";
 import { DonTorrentScrapper } from "../domain/providers/dontorrent/client/DonTorrentScrapper.ts";
@@ -25,7 +26,11 @@ container.bind(Token.TVMAZE).toDynamicValue(TVMaze.create);
 // DonTorrent
 container
   .bind(Token.DONTORRENT_SCRAPPER)
-  .toConstantValue(new DonTorrentScrapperLocalCache(new DonTorrentScrapper()));
+  .toConstantValue(
+    new DonTorrentScrapperLocalCache(
+      new DonTorrentScrapper(config.DON_TORRENT_BASE_URL, config.REQUEST_TIMEOUT_MS),
+    ),
+  );
 container
   .bind(Token.DONTORRENT_WRAPPER)
   .toDynamicValue(DonTorrentWrapper.create);
@@ -38,7 +43,10 @@ container
   .bind(Token.MARCIANOTORENT_SCRAPPER)
   .toConstantValue(
     new MarcianoTorrentScrapperLocalCache(
-      new MarcianoTorrentScrapper("https://marcianotorrent.net"),
+      new MarcianoTorrentScrapper(
+        config.MARCIANO_TORRENT_BASE_URL,
+        config.REQUEST_TIMEOUT_MS,
+      ),
     ),
   );
 container

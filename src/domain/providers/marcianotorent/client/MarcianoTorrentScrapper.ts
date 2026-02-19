@@ -15,11 +15,12 @@ export class MarcianoTorrentScrapper implements MarcianoTorrent {
   private readonly client: KyInstance;
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, timeout = 30_000) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
     this.client = ky.create({
       prefixUrl: baseUrl,
       retry: 0,
+      timeout,
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0",
