@@ -9,6 +9,7 @@ export function toTorznabFormat(format: DonTorrentFormat): string {
     [DonTorrentFormat.BLURAY_1080P]: "1080p BluRay",
     [DonTorrentFormat.BDREMUX_1080P]: "1080p BluRay",
     [DonTorrentFormat.MICROHD_1080P]: "1080p",
+    [DonTorrentFormat.MICROHD_720P]: "720p",
     [DonTorrentFormat.HDRIP]: "720p",
     [DonTorrentFormat.DVDRIP]: "DVDRip",
     [DonTorrentFormat.SCREENER]: "480p",

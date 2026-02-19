@@ -6,6 +6,7 @@ export const DonTorrentFormat = {
   BLURAY_1080P: "BluRay-1080p",
   BDREMUX_1080P: "BDremux-1080p",
   MICROHD_1080P: "MicroHD-1080p",
+  MICROHD_720P: "MicroHD-720p",
   HDRIP: "HDRip",
   DVDRIP: "DVDRip",
   SCREENER: "Screener",
