@@ -21,7 +21,7 @@ import {
 export class PerformTVSearchHandler {
   private readonly tmdb: TMDB;
   private readonly tvmaze: TVMaze;
-  private readonly donTorrentAdapter: DonTorrentTVAdapter;
+  private readonly donTorrentAdapter: DonTorrentTVAdapter | null;
   private readonly logger: Logger;
 
   private readonly MOCK_ITEM: TorznabItemTV = {
@@ -36,19 +36,24 @@ export class PerformTVSearchHandler {
   };
 
   public static async create(context: ResolutionContext) {
-    const [tmdb, tvmaze, donTorrentAdapter, logger] = await Promise.all([
+    const [tmdb, tvmaze, donTorrentAdapters, logger] = await Promise.all([
       context.getAsync<TMDB>(Token.TMDB),
       context.getAsync<TVMaze>(Token.TVMAZE),
-      context.getAsync<DonTorrentTVAdapter>(Token.DONTORRENT_TV_ADAPTER),
+      context.getAllAsync<DonTorrentTVAdapter>(Token.DONTORRENT_TV_ADAPTER),
       context.getAsync<Logger>(Token.LOGGER),
     ]);
-    return new PerformTVSearchHandler(tmdb, tvmaze, donTorrentAdapter, logger);
+    return new PerformTVSearchHandler(
+      tmdb,
+      tvmaze,
+      donTorrentAdapters.at(0) ?? null,
+      logger,
+    );
   }
 
   constructor(
     tmdb: TMDB,
     tvmaze: TVMaze,
-    donTorrentAdapter: DonTorrentTVAdapter,
+    donTorrentAdapter: DonTorrentTVAdapter | null,
     logger: Logger,
   ) {
     this.tmdb = tmdb;
@@ -67,6 +72,10 @@ export class PerformTVSearchHandler {
     this.logger.info(`Searching by: ${name}`);
 
     if (!name) {
+      return [];
+    }
+
+    if (!this.donTorrentAdapter) {
       return [];
     }
 

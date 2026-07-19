@@ -24,42 +24,44 @@ container.bind(Token.TMDB).toDynamicValue(TMDB.create);
 container.bind(Token.TVMAZE).toDynamicValue(TVMaze.create);
 
 // DonTorrent
-container
-  .bind(Token.DONTORRENT_SCRAPPER)
-  .toConstantValue(
-    new DonTorrentScrapperLocalCache(
-      new DonTorrentScrapper(config.DON_TORRENT_BASE_URL, config.REQUEST_TIMEOUT_MS),
-    ),
-  );
-container
-  .bind(Token.DONTORRENT_WRAPPER)
-  .toDynamicValue(DonTorrentWrapper.create);
-container
-  .bind(Token.DONTORRENT_TV_ADAPTER)
-  .toDynamicValue(DonTorrentTVAdapter.create);
+if (config.ENABLE_DON_TORRENT) {
+  container
+    .bind(Token.DONTORRENT_SCRAPPER)
+    .toConstantValue(
+      new DonTorrentScrapperLocalCache(
+        new DonTorrentScrapper(config.DON_TORRENT_BASE_URL, config.REQUEST_TIMEOUT_MS),
+      ),
+    );
+  container
+    .bind(Token.DONTORRENT_WRAPPER)
+    .toDynamicValue(DonTorrentWrapper.create);
+  container
+    .bind(Token.DONTORRENT_TV_ADAPTER)
+    .toDynamicValue(DonTorrentTVAdapter.create);
+  container
+    .bind(Token.MOVIE_ADAPTER)
+    .toDynamicValue(DonTorrentMovieAdapter.create);
+}
 
 // MarcianoTorrent
-container
-  .bind(Token.MARCIANOTORENT_SCRAPPER)
-  .toConstantValue(
-    new MarcianoTorrentScrapperLocalCache(
-      new MarcianoTorrentScrapper(
-        config.MARCIANO_TORRENT_BASE_URL,
-        config.REQUEST_TIMEOUT_MS,
+if (config.ENABLE_MARCIANO_TORRENT) {
+  container
+    .bind(Token.MARCIANOTORENT_SCRAPPER)
+    .toConstantValue(
+      new MarcianoTorrentScrapperLocalCache(
+        new MarcianoTorrentScrapper(
+          config.MARCIANO_TORRENT_BASE_URL,
+          config.REQUEST_TIMEOUT_MS,
+        ),
       ),
-    ),
-  );
-container
-  .bind(Token.MARCIANOTORENT_WRAPPER)
-  .toDynamicValue(MarcianoTorrentWrapper.create);
-
-// Movie adapters (multi-bind — getAllAsync returns both)
-container
-  .bind(Token.MOVIE_ADAPTER)
-  .toDynamicValue(DonTorrentMovieAdapter.create);
-container
-  .bind(Token.MOVIE_ADAPTER)
-  .toDynamicValue(MarcianoTorrentMovieAdapter.create);
+    );
+  container
+    .bind(Token.MARCIANOTORENT_WRAPPER)
+    .toDynamicValue(MarcianoTorrentWrapper.create);
+  container
+    .bind(Token.MOVIE_ADAPTER)
+    .toDynamicValue(MarcianoTorrentMovieAdapter.create);
+}
 
 container.bind(Token.LOGGER).toDynamicValue(LoggerPino.create);
 
