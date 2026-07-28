@@ -59,6 +59,10 @@ export class DonTorrentScrapper implements DonTorrent {
     size: number,
     page: number,
   ): DonTorrentPageableMeta {
+    if (size === 0) {
+      return { page, size, hasNext: false };
+    }
+
     const lastPageItem = $("nav.page-navigator li:last-child");
     const hasNext = !lastPageItem.hasClass("disabled");
 

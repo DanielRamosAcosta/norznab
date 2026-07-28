@@ -23,7 +23,7 @@ export class DonTorrentWrapper {
   async searchAll(query: string, page = 0): Promise<typeof result.items> {
     const result = await this.scrapper.search(query, page);
 
-    if (!result.meta.hasNext) {
+    if (result.items.length === 0 || !result.meta.hasNext) {
       return result.items;
     }
 
