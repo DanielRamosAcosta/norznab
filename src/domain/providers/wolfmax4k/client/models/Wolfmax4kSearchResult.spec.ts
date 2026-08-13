@@ -30,6 +30,37 @@ describe("Wolfmax4kSearchResult", () => {
         null,
       );
     });
+
+    it("tolerates the source's backtick typo", () => {
+      const r = result("online/1", "Rick y Morty [HDTV 1080p]`Cap.802]");
+      expect(r.episodeMarker).toEqual({ season: 8, episode: 2 });
+      expect(r.isTVEpisode()).toBe(true);
+    });
+  });
+
+  describe("season packs ([Cap.SEE_SEE])", () => {
+    it("parses a full-season pack range", () => {
+      const r = result(
+        "serie-online/1",
+        "Rick Y Morty - Temporada 5 [HDTV][Cap.501_512]",
+      );
+      expect(r.seasonPack).toEqual({ season: 5, from: 1, to: 12 });
+      expect(r.episodeMarker).toBe(null);
+    });
+
+    it("parses a partial pack range", () => {
+      const r = result("serie-online/1", "Temporada 4 [HDTV][Cap.406_408]");
+      expect(r.seasonPack).toEqual({ season: 4, from: 6, to: 8 });
+    });
+
+    it("is TV and matches the season, but not a single episode", () => {
+      const r = result("serie-online/1", "Temporada 5 [HDTV][Cap.501_512]");
+      expect(r.isTVEpisode()).toBe(true);
+      expect(r.isMovie()).toBe(false);
+      expect(r.matchesSeason(5)).toBe(true);
+      expect(r.matchesSeason(4)).toBe(false);
+      expect(r.matchesEpisode(5, 3)).toBe(false);
+    });
   });
 
   it("classifies episodes vs movies from the name, not the guid prefix", () => {
