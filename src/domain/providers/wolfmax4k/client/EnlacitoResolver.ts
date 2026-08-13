@@ -18,6 +18,7 @@ export class EnlacitoResolver {
   private readonly baseUrl: string;
   private readonly passphrase: string;
   private readonly userAgent: string;
+  private readonly timeout: number;
 
   // ROT13("wolfmax4k.com") — the constant fallback the s.php form posts back.
   private static readonly LINKSER_FALLBACK = "jbysznk4x.pbz";
@@ -26,10 +27,15 @@ export class EnlacitoResolver {
     baseUrl = "https://enlacito.com",
     passphrase = "fee631d2cffda38a78b96ee6d2dfb43a",
     userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    // Per-request budget. enlacito normally answers in <2s; a short cap keeps a
+    // throttled/stalled connection from hanging the whole search (undici's fetch
+    // has no default timeout), letting that edition fail fast and be dropped.
+    timeout = 20_000,
   ) {
     this.baseUrl = baseUrl;
     this.passphrase = passphrase;
     this.userAgent = userAgent;
+    this.timeout = timeout;
   }
 
   async resolve(sharerUrl: string): Promise<string> {
@@ -45,6 +51,7 @@ export class EnlacitoResolver {
         "user-agent": this.userAgent,
         referer: "https://wolfmax4k.com/",
       },
+      signal: AbortSignal.timeout(this.timeout),
     });
     const cookie = (sResponse.headers.getSetCookie?.() ?? [])
       .map((entry) => entry.split(";")[0])
@@ -59,6 +66,7 @@ export class EnlacitoResolver {
         cookie,
       },
       body: `linkser=${EnlacitoResolver.LINKSER_FALLBACK}`,
+      signal: AbortSignal.timeout(this.timeout),
     });
     const html = await pageResponse.text();
 
