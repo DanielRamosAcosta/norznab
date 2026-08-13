@@ -56,17 +56,23 @@ export class Wolfmax4kTVAdapter implements TVAdapter {
     showName: string,
     result: Wolfmax4kSearchResult,
   ): Promise<TorznabItemTV | null> {
-    const marker = result.episodeMarker;
-    if (!marker) {
+    const episode = result.episodeMarker;
+    const pack = result.seasonPack;
+    if (!episode && !pack) {
       return null;
     }
+
+    // Season packs carry a season but no single episode (e.g. "Show S05").
+    const season = (episode ?? pack)!.season;
+    const code = episode
+      ? `S${pad(season)}E${pad(episode.episode)}`
+      : `S${pad(season)}`;
 
     try {
       const buffer = await this.wolfmax4k.getTorrent(result.guid);
       const parsed = await parseTorrent(buffer);
       const link = toMagnetURI(parsed);
       const format = toTorznabFormat(result.quality);
-      const code = `S${pad(marker.season)}E${pad(marker.episode)}`;
 
       return {
         type: "tv",
@@ -74,8 +80,8 @@ export class Wolfmax4kTVAdapter implements TVAdapter {
         link,
         size: "length" in parsed ? (parsed.length ?? 0) : 0,
         category: 5000,
-        season: marker.season,
-        episode: marker.episode,
+        season,
+        ...(episode ? { episode: episode.episode } : {}),
         pubDate: (
           ("created" in parsed ? parsed.created : undefined) ?? new Date()
         ).toUTCString(),
