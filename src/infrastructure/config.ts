@@ -8,10 +8,12 @@ const boolFromEnv = z
 export const ConfigSchema = z.object({
   DON_TORRENT_BASE_URL: z.string(),
   MARCIANO_TORRENT_BASE_URL: z.string(),
+  WOLFMAX4K_BASE_URL: z.string().default("https://wolfmax4k.com"),
   TMDB_API_KEY: z.string(),
   REQUEST_TIMEOUT_MS: z.coerce.number().default(30_000),
   ENABLE_DON_TORRENT: boolFromEnv,
   ENABLE_MARCIANO_TORRENT: boolFromEnv,
+  ENABLE_WOLFMAX4K: boolFromEnv,
 });
 
 export const config = ConfigSchema.parse(process.env);

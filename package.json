@@ -25,6 +25,7 @@
     "jstoxml": "^7.0.1",
     "ky": "^1.14.2",
     "parse-torrent": "^11.0.19",
+    "quico": "^0.4.0",
     "zod": "^4.0.14"
   },
   "devDependencies": {
