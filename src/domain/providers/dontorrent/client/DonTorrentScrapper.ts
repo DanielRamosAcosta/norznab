@@ -23,7 +23,7 @@ export class DonTorrentScrapper implements DonTorrent {
 
   private static readonly PAGE_SIZE = 30;
 
-  constructor(baseUrl = "https://dontorrent.promo", timeout = 30_000) {
+  constructor(baseUrl = "https://dontorrent.management", timeout = 30_000) {
     this.client = ky.create({
       prefixUrl: baseUrl,
       retry: 0,
