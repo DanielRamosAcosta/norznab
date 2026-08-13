@@ -1,6 +1,6 @@
 import type { ResolutionContext } from "inversify";
 import { getTorznabRssXml } from "../mappers.ts";
-import type { DonTorrentTVAdapter } from "../providers/dontorrent/DonTorrentTVAdapter.ts";
+import type { TVAdapter } from "../providers/TVAdapter.ts";
 import type { TMDB } from "../clients/tmdb/TMDB.ts";
 import { Token } from "../Token.ts";
 import {
@@ -16,12 +16,13 @@ import type { Logger } from "../services/Logger.ts";
 import {
   SearchCriteriaEpisode,
   SearchCriteriaSeason,
-} from "../providers/dontorrent/Criterias.ts";
+  type SearchCriteria,
+} from "../providers/SearchCriteria.ts";
 
 export class PerformTVSearchHandler {
   private readonly tmdb: TMDB;
   private readonly tvmaze: TVMaze;
-  private readonly donTorrentAdapter: DonTorrentTVAdapter | null;
+  private readonly tvAdapters: TVAdapter[];
   private readonly logger: Logger;
 
   private readonly MOCK_ITEM: TorznabItemTV = {
@@ -36,29 +37,24 @@ export class PerformTVSearchHandler {
   };
 
   public static async create(context: ResolutionContext) {
-    const [tmdb, tvmaze, donTorrentAdapters, logger] = await Promise.all([
+    const [tmdb, tvmaze, tvAdapters, logger] = await Promise.all([
       context.getAsync<TMDB>(Token.TMDB),
       context.getAsync<TVMaze>(Token.TVMAZE),
-      context.getAllAsync<DonTorrentTVAdapter>(Token.DONTORRENT_TV_ADAPTER),
+      context.getAllAsync<TVAdapter>(Token.TV_ADAPTER),
       context.getAsync<Logger>(Token.LOGGER),
     ]);
-    return new PerformTVSearchHandler(
-      tmdb,
-      tvmaze,
-      donTorrentAdapters.at(0) ?? null,
-      logger,
-    );
+    return new PerformTVSearchHandler(tmdb, tvmaze, tvAdapters, logger);
   }
 
   constructor(
     tmdb: TMDB,
     tvmaze: TVMaze,
-    donTorrentAdapter: DonTorrentTVAdapter | null,
+    tvAdapters: TVAdapter[],
     logger: Logger,
   ) {
     this.tmdb = tmdb;
     this.tvmaze = tvmaze;
-    this.donTorrentAdapter = donTorrentAdapter;
+    this.tvAdapters = tvAdapters;
     this.logger = logger;
   }
 
@@ -75,23 +71,30 @@ export class PerformTVSearchHandler {
       return [];
     }
 
-    if (!this.donTorrentAdapter) {
-      return [];
-    }
+    const criteria = this.buildCriteria(request, name);
 
+    const results = await Promise.all(
+      this.tvAdapters.map((adapter) =>
+        adapter.findBy(criteria).catch((error) => {
+          this.logger.error("TV adapter failed", { err: error });
+          return [] as TorznabItemTV[];
+        }),
+      ),
+    );
+
+    return results.flat();
+  }
+
+  private buildCriteria(
+    request: TVSearchRequest,
+    name: string,
+  ): SearchCriteria {
     if (isTVSearchByEpisode(request)) {
-      const criteria = new SearchCriteriaEpisode(
-        name,
-        request.season,
-        request.ep,
-      );
-
-      return await this.donTorrentAdapter.findBy(criteria);
+      return new SearchCriteriaEpisode(name, request.season, request.ep);
     }
 
     if (isTVSearchBySeason(request)) {
-      const criteria = new SearchCriteriaSeason(name, request.season);
-      return await this.donTorrentAdapter.findBy(criteria);
+      return new SearchCriteriaSeason(name, request.season);
     }
 
     throw new Error("What?");

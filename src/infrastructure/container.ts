@@ -11,6 +11,11 @@ import { MarcianoTorrentScrapper } from "../domain/providers/marcianotorent/clie
 import { MarcianoTorrentScrapperLocalCache } from "../domain/providers/marcianotorent/client/MarcianoTorrentScrapperLocalCache.ts";
 import { MarcianoTorrentWrapper } from "../domain/providers/marcianotorent/MarcianoTorrentWrapper.ts";
 import { MarcianoTorrentMovieAdapter } from "../domain/providers/marcianotorent/MarcianoTorrentMovieAdapter.ts";
+import { Wolfmax4kScrapper } from "../domain/providers/wolfmax4k/client/Wolfmax4kScrapper.ts";
+import { Wolfmax4kScrapperLocalCache } from "../domain/providers/wolfmax4k/client/Wolfmax4kScrapperLocalCache.ts";
+import { Wolfmax4kWrapper } from "../domain/providers/wolfmax4k/Wolfmax4kWrapper.ts";
+import { Wolfmax4kMovieAdapter } from "../domain/providers/wolfmax4k/Wolfmax4kMovieAdapter.ts";
+import { Wolfmax4kTVAdapter } from "../domain/providers/wolfmax4k/Wolfmax4kTVAdapter.ts";
 import { RequestHandler } from "../domain/handlers/RequestHandler.ts";
 import { LoggerPino } from "../domain/services/LoggerPino.ts";
 import { TVMaze } from "../domain/clients/tvmaze/TVMaze.ts";
@@ -29,15 +34,16 @@ if (config.ENABLE_DON_TORRENT) {
     .bind(Token.DONTORRENT_SCRAPPER)
     .toConstantValue(
       new DonTorrentScrapperLocalCache(
-        new DonTorrentScrapper(config.DON_TORRENT_BASE_URL, config.REQUEST_TIMEOUT_MS),
+        new DonTorrentScrapper(
+          config.DON_TORRENT_BASE_URL,
+          config.REQUEST_TIMEOUT_MS,
+        ),
       ),
     );
   container
     .bind(Token.DONTORRENT_WRAPPER)
     .toDynamicValue(DonTorrentWrapper.create);
-  container
-    .bind(Token.DONTORRENT_TV_ADAPTER)
-    .toDynamicValue(DonTorrentTVAdapter.create);
+  container.bind(Token.TV_ADAPTER).toDynamicValue(DonTorrentTVAdapter.create);
   container
     .bind(Token.MOVIE_ADAPTER)
     .toDynamicValue(DonTorrentMovieAdapter.create);
@@ -61,6 +67,27 @@ if (config.ENABLE_MARCIANO_TORRENT) {
   container
     .bind(Token.MOVIE_ADAPTER)
     .toDynamicValue(MarcianoTorrentMovieAdapter.create);
+}
+
+// Wolfmax4k
+if (config.ENABLE_WOLFMAX4K) {
+  container
+    .bind(Token.WOLFMAX4K_SCRAPPER)
+    .toConstantValue(
+      new Wolfmax4kScrapperLocalCache(
+        new Wolfmax4kScrapper(
+          config.WOLFMAX4K_BASE_URL,
+          config.REQUEST_TIMEOUT_MS,
+        ),
+      ),
+    );
+  container
+    .bind(Token.WOLFMAX4K_WRAPPER)
+    .toDynamicValue(Wolfmax4kWrapper.create);
+  container
+    .bind(Token.MOVIE_ADAPTER)
+    .toDynamicValue(Wolfmax4kMovieAdapter.create);
+  container.bind(Token.TV_ADAPTER).toDynamicValue(Wolfmax4kTVAdapter.create);
 }
 
 container.bind(Token.LOGGER).toDynamicValue(LoggerPino.create);

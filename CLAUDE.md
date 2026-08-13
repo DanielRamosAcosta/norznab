@@ -110,6 +110,38 @@ All responses are UTF-8 encoded XML with proper escaping:
 - RSS feed uses `<torznab:attr>` namespace for structured attributes
 - Error responses use dedicated error XML format with numeric codes
 
+## Torrent Sources / Providers
+
+Providers live under `src/domain/providers/<name>/` and plug into the search
+handlers via inversify tokens: movie providers bind `Token.MOVIE_ADAPTER`
+(`MovieAdapter.findMovie`), TV providers bind `Token.TV_ADAPTER`
+(`TVAdapter.findBy`). Both handlers aggregate every bound adapter, so adding a
+source is: implement the adapter(s) + bind them in `container.ts`. Each source
+has an `ENABLE_<NAME>` flag in `config.ts`. Current sources: DonTorrent,
+MarcianoTorrent (movies), wolfmax4k (movies + series).
+
+### wolfmax4k (`src/domain/providers/wolfmax4k/`)
+
+wolfmax4k needs a bespoke transport and download flow; the details are
+non-obvious:
+
+- **HTTP/3 transport (`quico`).** wolfmax4k is blocked at the ISP level by
+  plaintext-SNI DPI on TCP (a TLS reset on the ClientHello), so `fetch`/`ky`/curl
+  fail with `ECONNRESET`. QUIC (UDP/443) is not filtered, so wolfmax4k requests
+  go over HTTP/3 via the pure-JS `quico` client (`client/Http3Client.ts`). This
+  is the reason this provider does not use `ky` like the others.
+- **Search** is `POST /mvc/controllers/data.find.php` (multipart: `token`,
+  `cidr`, `c`, `q`, `l`, `pg`; needs a `Referer` and a CSRF `token` scraped from
+  any page). It returns JSON (`data.datafinds`), not HTML.
+- **Movie vs episode** is decided from the release name, not the `guid` prefix
+  (movies also appear under `online/`): episodes carry a `[Cap.SEE]` marker
+  (`Cap.309` -> S3E09), movies carry a `(YYYY)` year.
+- **Download** goes through the `enlacito.com` ad-gate. `client/EnlacitoResolver.ts`
+  replays it without a browser: `GET s.php?i=<token>` (Referer wolfmax) sets a
+  `PHPSESSID`; `POST /` with that cookie renders `var link_out`, a GibberishAES
+  `Salted__` payload (`client/decodeLink.ts`, static key) that decrypts to the
+  signed `.torrent` URL on wolfmax4k, downloaded over HTTP/3.
+
 ## Docker Configuration Notes
 
 - Services use `arrs-network` bridge for inter-service communication

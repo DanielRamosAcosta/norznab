@@ -3,8 +3,9 @@ import type { TorznabItemTV } from "../../models/TorznabItemTV.ts";
 import type { DonTorrentWrapper } from "./DonTorrentWrapper.ts";
 import { Token } from "../../Token.ts";
 import { SearchCriteria } from "./Criterias.ts";
+import type { TVAdapter } from "../TVAdapter.ts";
 
-export class DonTorrentTVAdapter {
+export class DonTorrentTVAdapter implements TVAdapter {
   private readonly donTorrent: DonTorrentWrapper;
 
   public static async create(context: ResolutionContext) {
