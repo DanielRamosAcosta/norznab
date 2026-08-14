@@ -1,4 +1,6 @@
 import { decodeLink } from "./decodeLink.ts";
+import type { Logger } from "../../../services/Logger.ts";
+import { LoggerNoop } from "../../../services/LoggerNoop.ts";
 
 /**
  * Resolves a wolfmax4k download link (an `enlacito.com/s.php?i=<token>` URL)
@@ -18,6 +20,7 @@ export class EnlacitoResolver {
   private readonly baseUrl: string;
   private readonly passphrase: string;
   private readonly userAgent: string;
+  private readonly logger: Logger;
 
   // ROT13("wolfmax4k.com") — the constant fallback the s.php form posts back.
   private static readonly LINKSER_FALLBACK = "jbysznk4x.pbz";
@@ -26,10 +29,12 @@ export class EnlacitoResolver {
     baseUrl = "https://enlacito.com",
     passphrase = "fee631d2cffda38a78b96ee6d2dfb43a",
     userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    logger: Logger = new LoggerNoop(),
   ) {
     this.baseUrl = baseUrl;
     this.passphrase = passphrase;
     this.userAgent = userAgent;
+    this.logger = logger.forClass(EnlacitoResolver.name);
   }
 
   async resolve(sharerUrl: string): Promise<string> {
@@ -40,6 +45,8 @@ export class EnlacitoResolver {
 
     const sUrl = `${this.baseUrl}/s.php?i=${encodeURIComponent(token)}`;
 
+    let startedAt = Date.now();
+    this.logger.debug("enlacito s.php →", { token: token.slice(0, 12) });
     const sResponse = await fetch(sUrl, {
       headers: {
         "user-agent": this.userAgent,
@@ -49,7 +56,14 @@ export class EnlacitoResolver {
     const cookie = (sResponse.headers.getSetCookie?.() ?? [])
       .map((entry) => entry.split(";")[0])
       .join("; ");
+    this.logger.debug("enlacito s.php ←", {
+      status: sResponse.status,
+      hasCookie: cookie.length > 0,
+      ms: Date.now() - startedAt,
+    });
 
+    startedAt = Date.now();
+    this.logger.debug("enlacito POST →", {});
     const pageResponse = await fetch(`${this.baseUrl}/`, {
       method: "POST",
       headers: {
@@ -63,6 +77,12 @@ export class EnlacitoResolver {
     const html = await pageResponse.text();
 
     const linkOut = html.match(/var link_out = "([A-Za-z0-9+/=]+)"/)?.[1];
+    this.logger.debug("enlacito POST ←", {
+      status: pageResponse.status,
+      bytes: html.length,
+      hasLinkOut: Boolean(linkOut),
+      ms: Date.now() - startedAt,
+    });
     if (!linkOut) {
       throw new Error("Could not find link_out in enlacito response");
     }

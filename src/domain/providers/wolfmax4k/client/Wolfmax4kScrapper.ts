@@ -11,11 +11,14 @@ import {
 } from "./models/Wolfmax4kFindResponse.ts";
 import { Wolfmax4kSearchResult } from "./models/Wolfmax4kSearchResult.ts";
 import type { Wolfmax4kPageable } from "./models/Wolfmax4kPageable.ts";
+import type { Logger } from "../../../services/Logger.ts";
+import { LoggerNoop } from "../../../services/LoggerNoop.ts";
 
 export class Wolfmax4kScrapper implements Wolfmax4k {
   private readonly hostname: string;
   private readonly http: Http3Client;
   private readonly enlacito: EnlacitoResolver;
+  private readonly logger: Logger;
 
   private static readonly PAGE_SIZE = 100;
   private static readonly USER_AGENT =
@@ -28,10 +31,13 @@ export class Wolfmax4kScrapper implements Wolfmax4k {
     timeout = 30_000,
     http?: Http3Client,
     enlacito?: EnlacitoResolver,
+    logger: Logger = new LoggerNoop(),
   ) {
     this.hostname = new URL(baseUrl).hostname;
-    this.http = http ?? new QuicoHttp3Client(timeout);
-    this.enlacito = enlacito ?? new EnlacitoResolver();
+    this.logger = logger.forClass(Wolfmax4kScrapper.name);
+    this.http = http ?? new QuicoHttp3Client(timeout, logger);
+    this.enlacito =
+      enlacito ?? new EnlacitoResolver(undefined, undefined, undefined, logger);
   }
 
   async search(
@@ -59,6 +65,14 @@ export class Wolfmax4kScrapper implements Wolfmax4k {
       );
 
     const hasNext = (page + 1) * Wolfmax4kScrapper.PAGE_SIZE < data.pgcount;
+
+    this.logger.debug("search", {
+      query,
+      page,
+      items: items.length,
+      pgcount: data.pgcount,
+      hasNext,
+    });
 
     return { items, meta: { page, size: items.length, hasNext } };
   }
@@ -106,9 +120,26 @@ export class Wolfmax4kScrapper implements Wolfmax4k {
   }
 
   async getTorrent(guid: string): Promise<Buffer> {
-    const sharerUrl = await this.getSharerUrl(guid);
-    const torrentUrl = await this.enlacito.resolve(sharerUrl);
-    return this.download(torrentUrl);
+    const startedAt = Date.now();
+    this.logger.debug("getTorrent →", { guid });
+    try {
+      const sharerUrl = await this.getSharerUrl(guid);
+      const torrentUrl = await this.enlacito.resolve(sharerUrl);
+      const torrent = await this.download(torrentUrl);
+      this.logger.debug("getTorrent ←", {
+        guid,
+        bytes: torrent.length,
+        ms: Date.now() - startedAt,
+      });
+      return torrent;
+    } catch (error) {
+      this.logger.debug("getTorrent ✗", {
+        guid,
+        ms: Date.now() - startedAt,
+        err: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   private async getSharerUrl(guid: string): Promise<string> {

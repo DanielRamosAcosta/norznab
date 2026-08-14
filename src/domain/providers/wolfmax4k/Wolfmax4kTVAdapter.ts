@@ -12,28 +12,45 @@ import type { TorznabItemTV } from "../../models/TorznabItemTV.ts";
 import type { Wolfmax4kWrapper } from "./Wolfmax4kWrapper.ts";
 import type { Wolfmax4kSearchResult } from "./client/models/Wolfmax4kSearchResult.ts";
 import { toTorznabFormat } from "./toTorznabFormat.ts";
+import type { Logger } from "../../services/Logger.ts";
+import { LoggerNoop } from "../../services/LoggerNoop.ts";
 
 export class Wolfmax4kTVAdapter implements TVAdapter {
   private readonly wolfmax4k: Wolfmax4kWrapper;
+  private readonly logger: Logger;
 
   public static async create(context: ResolutionContext) {
-    const wrapper = await context.getAsync<Wolfmax4kWrapper>(
-      Token.WOLFMAX4K_WRAPPER,
-    );
-    return new Wolfmax4kTVAdapter(wrapper);
+    const [wrapper, logger] = await Promise.all([
+      context.getAsync<Wolfmax4kWrapper>(Token.WOLFMAX4K_WRAPPER),
+      context.getAsync<Logger>(Token.LOGGER),
+    ]);
+    return new Wolfmax4kTVAdapter(wrapper, logger);
   }
 
-  constructor(wolfmax4k: Wolfmax4kWrapper) {
+  constructor(wolfmax4k: Wolfmax4kWrapper, logger: Logger = new LoggerNoop()) {
     this.wolfmax4k = wolfmax4k;
+    this.logger = logger.forClass(Wolfmax4kTVAdapter.name);
   }
 
   async findBy(criteria: SearchCriteria): Promise<TorznabItemTV[]> {
+    const startedAt = Date.now();
     const results = await this.wolfmax4k.searchAll(criteria.name);
     const episodes = results.filter((result) => this.matches(result, criteria));
+    this.logger.debug("findBy resolving releases", {
+      name: criteria.name,
+      matches: episodes.length,
+    });
     const items = await Promise.all(
       episodes.map((episode) => this.extractEpisode(criteria.name, episode)),
     );
-    return filterEmpty(items);
+    const resolved = filterEmpty(items);
+    this.logger.debug("findBy done", {
+      name: criteria.name,
+      matches: episodes.length,
+      resolved: resolved.length,
+      ms: Date.now() - startedAt,
+    });
+    return resolved;
   }
 
   private matches(
