@@ -1,10 +1,5 @@
 import z from "zod";
 
-const boolFromEnv = z
-  .enum(["true", "false"])
-  .default("true")
-  .transform((v) => v === "true");
-
 const boolFromEnvDefaultFalse = z
   .enum(["true", "false"])
   .default("false")
@@ -30,9 +25,6 @@ export const ConfigSchema = z.object({
   WOLFMAX4K_HTTP_TIMEOUT_MS: z.coerce.number().default(15_000),
   TMDB_API_KEY: z.string(),
   REQUEST_TIMEOUT_MS: z.coerce.number().default(30_000),
-  ENABLE_DON_TORRENT: boolFromEnv,
-  ENABLE_MARCIANO_TORRENT: boolFromEnv,
-  ENABLE_WOLFMAX4K: boolFromEnv,
 });
 
 export const config = ConfigSchema.parse(process.env);

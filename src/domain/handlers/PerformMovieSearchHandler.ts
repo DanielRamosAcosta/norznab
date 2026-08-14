@@ -4,6 +4,7 @@ import {
 } from "../schemas/MovieSearchRequestSchema.ts";
 import type { TMDB } from "../clients/tmdb/TMDB.ts";
 import type { MovieAdapter } from "../providers/MovieAdapter.ts";
+import { selectBySource } from "../providers/selectBySource.ts";
 import { Token } from "../Token.ts";
 import type { ResolutionContext } from "inversify";
 import type { TorznabItemMovie } from "../models/TorznabItemMovie.ts";
@@ -37,8 +38,9 @@ export class PerformMovieSearchHandler {
   async handle(request: MovieSearchRequest): Promise<TorznabItemMovie[]> {
     if (isMovieSearchByTMDB(request)) {
       const movie = await this.tmdb.getMovie(request.tmdbid);
+      const adapters = selectBySource(this.movieAdapters, request.apikey);
       const results = await Promise.all(
-        this.movieAdapters.map((adapter) =>
+        adapters.map((adapter) =>
           adapter.findMovie(movie.title).catch(this.catchError.bind(this)),
         ),
       );

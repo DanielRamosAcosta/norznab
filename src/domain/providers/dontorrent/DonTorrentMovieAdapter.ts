@@ -7,8 +7,11 @@ import { Token } from "../../Token.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import { toTorznabFormat } from "./toTorznabFormat.ts";
 import type { MovieAdapter } from "../MovieAdapter.ts";
+import { ProviderSource } from "../ProviderSource.ts";
 
 export class DonTorrentMovieAdapter implements MovieAdapter {
+  readonly source = ProviderSource.DONTORRENT;
+
   private readonly donTorrent: DonTorrentWrapper;
 
   public static async create(context: ResolutionContext) {
@@ -51,7 +54,12 @@ export class DonTorrentMovieAdapter implements MovieAdapter {
 
       return {
         type: "movie",
-        title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)} - DonTorrent (${metadata.format})`,
+        // Title with the source's real per-release name (result.name, scraped
+        // from the results page) instead of the search query, so a sequel /
+        // saga pack / different film keeps its own title and Radarr can tell
+        // them apart. The site's HTML title parses cleanly in Radarr; the
+        // torrent's own info.name does not (bracket-heavy, no year).
+        title: `${result.name || movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)}`,
         link: link,
         size: "length" in parsed ? (parsed.length ?? 0) : 0,
         category: 2000,

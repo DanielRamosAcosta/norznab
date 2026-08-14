@@ -5,14 +5,16 @@ import { filterEmpty } from "../../utils/filterNull.ts";
 import { mapLimit } from "../../utils/mapLimit.ts";
 import { WOLFMAX4K_RESOLVE_CONCURRENCY } from "./concurrency.ts";
 import type { MovieAdapter } from "../MovieAdapter.ts";
+import { ProviderSource } from "../ProviderSource.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import type { Wolfmax4kWrapper } from "./Wolfmax4kWrapper.ts";
 import type { Wolfmax4kSearchResult } from "./client/models/Wolfmax4kSearchResult.ts";
-import { toTorznabFormat } from "./toTorznabFormat.ts";
 import type { Logger } from "../../services/Logger.ts";
 import { LoggerNoop } from "../../services/LoggerNoop.ts";
 
 export class Wolfmax4kMovieAdapter implements MovieAdapter {
+  readonly source = ProviderSource.WOLFMAX4K;
+
   private readonly wolfmax4k: Wolfmax4kWrapper;
   private readonly logger: Logger;
 
@@ -60,12 +62,15 @@ export class Wolfmax4kMovieAdapter implements MovieAdapter {
       const buffer = await this.wolfmax4k.getTorrent(result.guid);
       const parsed = await parseTorrent(buffer);
       const link = toMagnetURI(parsed);
-      const format = toTorznabFormat(result.quality);
       const year = result.year;
 
       return {
         type: "movie",
-        title: `${movieName}${year ? ` (${year})` : ""} ${format} - Wolfmax4k (${result.quality})`,
+        // wolfmax's search result carries the full release name (e.g. "Superman
+        // (2025) [Bluray 1080p][Esp]"), which already parses cleanly in Radarr
+        // and keeps sequels/different films distinguishable — use it verbatim
+        // instead of a title synthesized from the search query.
+        title: result.torrentName || `${movieName}${year ? ` (${year})` : ""}`,
         link,
         size: "length" in parsed ? (parsed.length ?? 0) : 0,
         category: 2000,

@@ -4,8 +4,11 @@ import type { DonTorrentWrapper } from "./DonTorrentWrapper.ts";
 import { Token } from "../../Token.ts";
 import { SearchCriteria } from "./Criterias.ts";
 import type { TVAdapter } from "../TVAdapter.ts";
+import { ProviderSource } from "../ProviderSource.ts";
 
 export class DonTorrentTVAdapter implements TVAdapter {
+  readonly source = ProviderSource.DONTORRENT;
+
   private readonly donTorrent: DonTorrentWrapper;
 
   public static async create(context: ResolutionContext) {
