@@ -18,6 +18,8 @@ export const ConfigSchema = z.object({
     ),
   DON_TORRENT_TOR_PROXY: z.string().default(""),
   MARCIANO_TORRENT_BASE_URL: z.string(),
+  // EliteTorrent is SNI-blocked on TCP like wolfmax; reached over HTTP/3.
+  ELITE_TORRENT_BASE_URL: z.string().default("https://www.elitetorrent.com"),
   WOLFMAX4K_BASE_URL: z.string().default("https://wolfmax4k.com"),
   // Per-request timeout for wolfmax HTTP/3 + enlacito calls. Kept short and
   // decoupled from REQUEST_TIMEOUT_MS so a stalled QUIC request fails fast

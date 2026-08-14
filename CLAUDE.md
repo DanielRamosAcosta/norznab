@@ -119,9 +119,23 @@ handlers via inversify tokens: movie providers bind `Token.MOVIE_ADAPTER`
 source is: implement the adapter(s) + bind them in `container.ts`. Each adapter
 exposes a `source` slug (`ProviderSource`); the search handlers narrow by the
 Torznab `apikey` via `selectBySource` — no key queries every source, a source
-slug ("dontorrent", "marcianotorrent", "wolfmax4k") queries only that one, so a
-\*arr client can register one indexer per source. Current sources: DonTorrent,
-MarcianoTorrent (movies), wolfmax4k (movies + series).
+slug ("dontorrent", "marcianotorrent", "wolfmax4k", "elitetorrent") queries only
+that one, so a \*arr client can register one indexer per source. Current sources:
+DonTorrent, MarcianoTorrent, EliteTorrent (movies), wolfmax4k (movies + series).
+
+The HTTP/3 transport (`QuicoHttp3Client`) is shared at
+`src/domain/providers/http3/Http3Client.ts` — used by any SNI-blocked source
+(wolfmax4k, EliteTorrent).
+
+### EliteTorrent (`src/domain/providers/elitetorrent/`)
+
+WordPress site, movies only. SNI-blocked on TCP (plain `fetch` → `ECONNRESET`)
+like wolfmax, so it uses the shared HTTP/3 transport. Search is
+`GET /?s=<query>`; results are poster anchors under `.imagen`. Downloads sit
+behind an `acortame-esto.com/s.php?i=<token>` ad-gate, but the token is a
+client-side obfuscation — `base64`×N wrapping a `ROT13` payload — of the real
+`magnet:` / on-site `.torrent` path, so `decodeEliteLink` peels it and the
+ad-gate is skipped entirely. The magnet's `dn` is used as the release name.
 
 ### wolfmax4k (`src/domain/providers/wolfmax4k/`)
 
