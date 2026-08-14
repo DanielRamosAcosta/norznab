@@ -17,6 +17,8 @@ import { Wolfmax4kScrapperLocalCache } from "../domain/providers/wolfmax4k/clien
 import { Wolfmax4kWrapper } from "../domain/providers/wolfmax4k/Wolfmax4kWrapper.ts";
 import { Wolfmax4kMovieAdapter } from "../domain/providers/wolfmax4k/Wolfmax4kMovieAdapter.ts";
 import { Wolfmax4kTVAdapter } from "../domain/providers/wolfmax4k/Wolfmax4kTVAdapter.ts";
+import { EliteTorrentScrapper } from "../domain/providers/elitetorrent/client/EliteTorrentScrapper.ts";
+import { EliteTorrentMovieAdapter } from "../domain/providers/elitetorrent/EliteTorrentMovieAdapter.ts";
 import { RequestHandler } from "../domain/handlers/RequestHandler.ts";
 import { LoggerPino } from "../domain/services/LoggerPino.ts";
 import type { Logger } from "../domain/services/Logger.ts";
@@ -90,6 +92,20 @@ container
   .bind(Token.MOVIE_ADAPTER)
   .toDynamicValue(Wolfmax4kMovieAdapter.create);
 container.bind(Token.TV_ADAPTER).toDynamicValue(Wolfmax4kTVAdapter.create);
+
+// EliteTorrent (HTTP/3, like wolfmax)
+container.bind(Token.ELITETORRENT_SCRAPPER).toDynamicValue(async (context) => {
+  const logger = await context.getAsync<Logger>(Token.LOGGER);
+  return new EliteTorrentScrapper(
+    config.ELITE_TORRENT_BASE_URL,
+    config.WOLFMAX4K_HTTP_TIMEOUT_MS,
+    undefined,
+    logger,
+  );
+});
+container
+  .bind(Token.MOVIE_ADAPTER)
+  .toDynamicValue(EliteTorrentMovieAdapter.create);
 
 container.bind(Token.LOGGER).toDynamicValue(LoggerPino.create);
 

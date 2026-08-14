@@ -1,6 +1,6 @@
 import quico from "quico";
-import type { Logger } from "../../../services/Logger.ts";
-import { LoggerNoop } from "../../../services/LoggerNoop.ts";
+import type { Logger } from "../../services/Logger.ts";
+import { LoggerNoop } from "../../services/LoggerNoop.ts";
 
 export interface Http3Response {
   status: number;

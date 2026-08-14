@@ -3,7 +3,7 @@ import {
   QuicoHttp3Client,
   type Http3Client,
   type Http3RequestOptions,
-} from "./Http3Client.ts";
+} from "../../http3/Http3Client.ts";
 import { EnlacitoResolver } from "./EnlacitoResolver.ts";
 import {
   Wolfmax4kFindResponseSchema,
