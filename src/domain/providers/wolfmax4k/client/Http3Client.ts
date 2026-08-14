@@ -33,6 +33,14 @@ export class QuicoHttp3Client implements Http3Client {
   private readonly retries: number;
   private readonly logger: Logger;
   private static counter = 0;
+  private static lastRecycle = 0;
+  private static lastActivity = 0;
+  private static readonly RECYCLE_DEBOUNCE_MS = 5_000;
+  // A QUIC connection left idle past the UDP/NAT timeout is silently dropped;
+  // quico keeps reusing the dead socket and every request then stalls to the
+  // timeout. Proactively reconnect after this much idle (a fresh handshake is
+  // ~350ms vs a 15s stall). Kept well under observed NAT death (~150s).
+  private static readonly IDLE_RECYCLE_MS = 30_000;
 
   constructor(
     timeout = 15_000,
@@ -48,6 +56,16 @@ export class QuicoHttp3Client implements Http3Client {
     const id = ++QuicoHttp3Client.counter;
     let lastError: unknown;
 
+    // Proactively drop connections idled past the NAT timeout so the first
+    // request after a gap reconnects fresh instead of stalling on a dead socket.
+    const now = Date.now();
+    const idle = now - QuicoHttp3Client.lastActivity;
+    QuicoHttp3Client.lastActivity = now;
+    if (idle > QuicoHttp3Client.IDLE_RECYCLE_MS) {
+      this.logger.debug("h3 idle recycle", { id, idleMs: idle });
+      this.recycleConnections();
+    }
+
     // quico's QUIC session to Cloudflare is fragile when cold / under fan-out
     // ("All protocols failed", multi-second stalls); a bounded retry recovers.
     for (let attempt = 0; attempt <= this.retries; attempt++) {
@@ -56,17 +74,48 @@ export class QuicoHttp3Client implements Http3Client {
       } catch (error) {
         lastError = error;
         if (attempt < this.retries) {
-          this.logger.warn("h3 request retry", {
-            id,
-            attempt,
-            err: error instanceof Error ? error.message : String(error),
-          });
+          const message =
+            error instanceof Error ? error.message : String(error);
+          this.logger.warn("h3 request retry", { id, attempt, err: message });
+          // A timeout is the signature of a stale pooled QUIC connection (a
+          // fresh process never stalls); recycle so the retry reconnects fresh.
+          // Fast connection errors are transient cold-starts — just retry.
+          if (message.includes("timed out")) {
+            this.recycleConnections();
+          }
           await delay(250 * (attempt + 1));
         }
       }
     }
 
     throw lastError;
+  }
+
+  /**
+   * Tears down quico's global agent (its pooled QUIC connections).
+   *
+   * A long-lived quico session degrades over hours: pooled connections go stale
+   * and every request stalls to the timeout, while a freshly started process is
+   * fine. Dropping the agent forces the next request to reconnect, self-healing
+   * the pool. Debounced so a concurrent burst of timeouts recycles once.
+   */
+  private recycleConnections(): void {
+    const now = Date.now();
+    if (
+      now - QuicoHttp3Client.lastRecycle <
+      QuicoHttp3Client.RECYCLE_DEBOUNCE_MS
+    ) {
+      return;
+    }
+    QuicoHttp3Client.lastRecycle = now;
+    try {
+      quico.globalAgent?.destroy?.();
+      this.logger.warn("h3 recycled QUIC connections (stale pool recovery)");
+    } catch (error) {
+      this.logger.warn("h3 recycle failed", {
+        err: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private attempt(
