@@ -6,6 +6,7 @@ import { mapLimit } from "../../utils/mapLimit.ts";
 import { WOLFMAX4K_RESOLVE_CONCURRENCY } from "./concurrency.ts";
 import type { MovieAdapter } from "../MovieAdapter.ts";
 import { ProviderSource } from "../ProviderSource.ts";
+import { movieSearchTerm } from "../movieSearchTerm.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import type { Wolfmax4kWrapper } from "./Wolfmax4kWrapper.ts";
 import type { Wolfmax4kSearchResult } from "./client/models/Wolfmax4kSearchResult.ts";
@@ -33,7 +34,7 @@ export class Wolfmax4kMovieAdapter implements MovieAdapter {
 
   async findMovie(movieName: string): Promise<TorznabItemMovie[]> {
     const startedAt = Date.now();
-    const results = await this.wolfmax4k.searchAll(movieName);
+    const results = await this.wolfmax4k.searchAll(movieSearchTerm(movieName));
     const movies = results.filter((result) => result.isMovie());
     this.logger.debug("findMovie resolving editions", {
       movieName,

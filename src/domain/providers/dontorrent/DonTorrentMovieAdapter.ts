@@ -8,6 +8,7 @@ import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import { toTorznabFormat } from "./toTorznabFormat.ts";
 import type { MovieAdapter } from "../MovieAdapter.ts";
 import { ProviderSource } from "../ProviderSource.ts";
+import { movieSearchTerm } from "../movieSearchTerm.ts";
 
 export class DonTorrentMovieAdapter implements MovieAdapter {
   readonly source = ProviderSource.DONTORRENT;
@@ -26,7 +27,7 @@ export class DonTorrentMovieAdapter implements MovieAdapter {
   }
 
   async findMovie(movieName: string): Promise<TorznabItemMovie[]> {
-    const results = await this.donTorrent.searchAll(movieName);
+    const results = await this.donTorrent.searchAll(movieSearchTerm(movieName));
     const movies = results.filter((r) => r.isMovie());
     const moviesAndMeta = await Promise.all(
       movies.map((m) => this.extractMovie(movieName, m)),
