@@ -5,6 +5,7 @@ import { filterEmpty } from "../../utils/filterNull.ts";
 import { mapLimit } from "../../utils/mapLimit.ts";
 import { WOLFMAX4K_RESOLVE_CONCURRENCY } from "./concurrency.ts";
 import type { TVAdapter } from "../TVAdapter.ts";
+import { ProviderSource } from "../ProviderSource.ts";
 import {
   SearchCriteriaEpisode,
   SearchCriteriaSeason,
@@ -18,6 +19,8 @@ import type { Logger } from "../../services/Logger.ts";
 import { LoggerNoop } from "../../services/LoggerNoop.ts";
 
 export class Wolfmax4kTVAdapter implements TVAdapter {
+  readonly source = ProviderSource.WOLFMAX4K;
+
   private readonly wolfmax4k: Wolfmax4kWrapper;
   private readonly logger: Logger;
 

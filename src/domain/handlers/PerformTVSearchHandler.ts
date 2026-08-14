@@ -1,6 +1,7 @@
 import type { ResolutionContext } from "inversify";
 import { getTorznabRssXml } from "../mappers.ts";
 import type { TVAdapter } from "../providers/TVAdapter.ts";
+import { selectBySource } from "../providers/selectBySource.ts";
 import type { TMDB } from "../clients/tmdb/TMDB.ts";
 import { Token } from "../Token.ts";
 import {
@@ -73,8 +74,9 @@ export class PerformTVSearchHandler {
 
     const criteria = this.buildCriteria(request, name);
 
+    const adapters = selectBySource(this.tvAdapters, request.apikey);
     const results = await Promise.all(
-      this.tvAdapters.map((adapter) =>
+      adapters.map((adapter) =>
         adapter.findBy(criteria).catch((error) => {
           this.logger.error("TV adapter failed", { err: error });
           return [] as TorznabItemTV[];

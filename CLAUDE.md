@@ -116,8 +116,11 @@ Providers live under `src/domain/providers/<name>/` and plug into the search
 handlers via inversify tokens: movie providers bind `Token.MOVIE_ADAPTER`
 (`MovieAdapter.findMovie`), TV providers bind `Token.TV_ADAPTER`
 (`TVAdapter.findBy`). Both handlers aggregate every bound adapter, so adding a
-source is: implement the adapter(s) + bind them in `container.ts`. Each source
-has an `ENABLE_<NAME>` flag in `config.ts`. Current sources: DonTorrent,
+source is: implement the adapter(s) + bind them in `container.ts`. Each adapter
+exposes a `source` slug (`ProviderSource`); the search handlers narrow by the
+Torznab `apikey` via `selectBySource` — no key queries every source, a source
+slug ("dontorrent", "marcianotorrent", "wolfmax4k") queries only that one, so a
+\*arr client can register one indexer per source. Current sources: DonTorrent,
 MarcianoTorrent (movies), wolfmax4k (movies + series).
 
 ### wolfmax4k (`src/domain/providers/wolfmax4k/`)
