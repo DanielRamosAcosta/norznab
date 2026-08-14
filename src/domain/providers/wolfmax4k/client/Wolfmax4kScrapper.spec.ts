@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { Wolfmax4kScrapper } from "./Wolfmax4kScrapper.ts";
-import type { Http3Client, Http3Response } from "./Http3Client.ts";
+import type { Http3Client, Http3Response } from "../../http3/Http3Client.ts";
 
 function response(body: string): Http3Response {
   return {

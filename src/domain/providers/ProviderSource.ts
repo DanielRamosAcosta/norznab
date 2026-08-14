@@ -6,6 +6,7 @@ export const ProviderSource = {
   DONTORRENT: "dontorrent",
   MARCIANOTORRENT: "marcianotorrent",
   WOLFMAX4K: "wolfmax4k",
+  ELITETORRENT: "elitetorrent",
 } as const;
 
 export type ProviderSource =
