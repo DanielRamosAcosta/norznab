@@ -117,11 +117,13 @@ handlers via inversify tokens: movie providers bind `Token.MOVIE_ADAPTER`
 (`MovieAdapter.findMovie`), TV providers bind `Token.TV_ADAPTER`
 (`TVAdapter.findBy`). Both handlers aggregate every bound adapter, so adding a
 source is: implement the adapter(s) + bind them in `container.ts`. Each adapter
-exposes a `source` slug (`ProviderSource`); the search handlers narrow by the
-Torznab `apikey` via `selectBySource` — no key queries every source, a source
-slug ("dontorrent", "marcianotorrent", "wolfmax4k", "elitetorrent") queries only
-that one, so a \*arr client can register one indexer per source. Current sources:
-DonTorrent, MarcianoTorrent, EliteTorrent (movies), wolfmax4k (movies + series).
+exposes a `source` slug (`ProviderSource`); the search handlers select sources by
+the Torznab `apikey` via `selectBySource` — the key must equal a source slug
+("dontorrent", "marcianotorrent", "wolfmax4k", "elitetorrent") to return that
+source's results; a missing or unknown key returns nothing. So each source is its
+own indexer: register one Torznab indexer per source (same server, distinct API
+key). Current sources: DonTorrent, MarcianoTorrent, EliteTorrent (movies),
+wolfmax4k (movies + series).
 
 The HTTP/3 transport (`QuicoHttp3Client`) is shared at
 `src/domain/providers/http3/Http3Client.ts` — used by any SNI-blocked source

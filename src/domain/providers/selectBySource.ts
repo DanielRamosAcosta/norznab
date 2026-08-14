@@ -1,26 +1,18 @@
-import { ProviderSource } from "./ProviderSource.ts";
-
-const KNOWN_SOURCES: ReadonlySet<string> = new Set(
-  Object.values(ProviderSource),
-);
-
 /**
- * Narrows the provider adapters by the Torznab `apikey`, repurposed as a source
- * selector: a \*arr client can register one indexer per source and set its API
- * key to the source slug ("dontorrent", "marcianotorrent", "wolfmax4k") to query
- * only that source.
+ * Selects the provider adapters for a request by its Torznab `apikey`, which
+ * norznab repurposes as a source selector. Each source is exposed as its own
+ * indexer: register one Torznab indexer per source in Radarr/Sonarr, all
+ * pointing at the same norznab server, each with its API key set to the source
+ * slug ("dontorrent", "marcianotorrent", "wolfmax4k", "elitetorrent").
  *
- * - no key, or an arbitrary/real key → every provider (unchanged behaviour, so
- *   existing indexers configured with a random key keep working)
- * - a known source slug → only that source's adapters
+ * A request only returns results when its key matches a source slug; a missing
+ * or unknown key selects no source (and therefore no results), so every indexer
+ * must target a specific source.
  */
 export function selectBySource<T extends { source: string }>(
   adapters: T[],
   apikey: string | undefined,
 ): T[] {
-  const key = apikey?.trim().toLowerCase();
-  if (!key || !KNOWN_SOURCES.has(key)) {
-    return adapters;
-  }
+  const key = apikey?.trim().toLowerCase() ?? "";
   return adapters.filter((adapter) => adapter.source === key);
 }

@@ -9,17 +9,17 @@ const adapters = [
 ];
 
 describe("selectBySource", () => {
-  it("returns every adapter when no apikey is given", () => {
-    expect(selectBySource(adapters, undefined)).toEqual(adapters);
-    expect(selectBySource(adapters, "")).toEqual(adapters);
-    expect(selectBySource(adapters, "   ")).toEqual(adapters);
+  it("selects no source when no apikey is given", () => {
+    // Every indexer must target a source, so a missing key returns nothing.
+    expect(selectBySource(adapters, undefined)).toEqual([]);
+    expect(selectBySource(adapters, "")).toEqual([]);
+    expect(selectBySource(adapters, "   ")).toEqual([]);
   });
 
-  it("returns every adapter for an unknown/arbitrary apikey", () => {
-    // A real *arr API key (or a typo) must not break existing indexers.
+  it("selects no source for an unknown apikey", () => {
     expect(
       selectBySource(adapters, "25e7cccabdfa47898d13991d863f529c"),
-    ).toEqual(adapters);
+    ).toEqual([]);
   });
 
   it("keeps only the matching source for a known slug", () => {
