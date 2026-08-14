@@ -36,25 +36,31 @@ export class DonTorrentMovieAdapter implements MovieAdapter {
     movieName: string,
     result: DonTorrentSearchResult,
   ): Promise<TorznabItemMovie | null> {
-    const metadata = await this.donTorrent.getMovieMetadata(result.path);
-    const url = await this.donTorrent.contentToUrl(
-      metadata.contentId,
-      metadata.table,
-    );
+    // A single bad edition (e.g. an unmapped format) must not sink the whole
+    // search — drop it and keep the other editions.
+    try {
+      const metadata = await this.donTorrent.getMovieMetadata(result.path);
+      const url = await this.donTorrent.contentToUrl(
+        metadata.contentId,
+        metadata.table,
+      );
 
-    const buffer = await this.donTorrent.download(url);
-    const parsed = await parseTorrent(buffer);
-    const link = toMagnetURI(parsed);
+      const buffer = await this.donTorrent.download(url);
+      const parsed = await parseTorrent(buffer);
+      const link = toMagnetURI(parsed);
 
-    return {
-      type: "movie",
-      title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)} - DonTorrent (${metadata.format})`,
-      link: link,
-      size: "length" in parsed ? (parsed.length ?? 0) : 0,
-      category: 2000,
-      pubDate: (
-        ("created" in parsed ? parsed.created : undefined) ?? new Date()
-      ).toUTCString(),
-    };
+      return {
+        type: "movie",
+        title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)} - DonTorrent (${metadata.format})`,
+        link: link,
+        size: "length" in parsed ? (parsed.length ?? 0) : 0,
+        category: 2000,
+        pubDate: (
+          ("created" in parsed ? parsed.created : undefined) ?? new Date()
+        ).toUTCString(),
+      };
+    } catch {
+      return null;
+    }
   }
 }
