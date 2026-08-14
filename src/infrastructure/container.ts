@@ -18,6 +18,7 @@ import { Wolfmax4kMovieAdapter } from "../domain/providers/wolfmax4k/Wolfmax4kMo
 import { Wolfmax4kTVAdapter } from "../domain/providers/wolfmax4k/Wolfmax4kTVAdapter.ts";
 import { RequestHandler } from "../domain/handlers/RequestHandler.ts";
 import { LoggerPino } from "../domain/services/LoggerPino.ts";
+import type { Logger } from "../domain/services/Logger.ts";
 import { TVMaze } from "../domain/clients/tvmaze/TVMaze.ts";
 
 export const container = new Container({
@@ -71,16 +72,18 @@ if (config.ENABLE_MARCIANO_TORRENT) {
 
 // Wolfmax4k
 if (config.ENABLE_WOLFMAX4K) {
-  container
-    .bind(Token.WOLFMAX4K_SCRAPPER)
-    .toConstantValue(
-      new Wolfmax4kScrapperLocalCache(
-        new Wolfmax4kScrapper(
-          config.WOLFMAX4K_BASE_URL,
-          config.REQUEST_TIMEOUT_MS,
-        ),
+  container.bind(Token.WOLFMAX4K_SCRAPPER).toDynamicValue(async (context) => {
+    const logger = await context.getAsync<Logger>(Token.LOGGER);
+    return new Wolfmax4kScrapperLocalCache(
+      new Wolfmax4kScrapper(
+        config.WOLFMAX4K_BASE_URL,
+        config.REQUEST_TIMEOUT_MS,
+        undefined,
+        undefined,
+        logger,
       ),
     );
+  });
   container
     .bind(Token.WOLFMAX4K_WRAPPER)
     .toDynamicValue(Wolfmax4kWrapper.create);

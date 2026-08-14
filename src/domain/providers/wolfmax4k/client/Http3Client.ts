@@ -1,4 +1,6 @@
 import quico from "quico";
+import type { Logger } from "../../../services/Logger.ts";
+import { LoggerNoop } from "../../../services/LoggerNoop.ts";
 
 export interface Http3Response {
   status: number;
@@ -28,12 +30,21 @@ export interface Http3Client {
 
 export class QuicoHttp3Client implements Http3Client {
   private readonly timeout: number;
+  private readonly logger: Logger;
+  private static counter = 0;
 
-  constructor(timeout = 30_000) {
+  constructor(timeout = 30_000, logger: Logger = new LoggerNoop()) {
     this.timeout = timeout;
+    this.logger = logger.forClass(QuicoHttp3Client.name);
   }
 
   send(options: Http3RequestOptions): Promise<Http3Response> {
+    const id = ++QuicoHttp3Client.counter;
+    const method = options.method ?? "GET";
+    const startedAt = Date.now();
+    const meta = { id, method, host: options.hostname, path: options.path };
+    this.logger.debug("h3 request →", meta);
+
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
 
@@ -48,18 +59,26 @@ export class QuicoHttp3Client implements Http3Client {
         {
           hostname: options.hostname,
           path: options.path,
-          method: options.method ?? "GET",
+          method,
           headers,
         },
         (res) => {
           res.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
           res.on("end", () => {
             clearTimeout(timer);
+            const body = Buffer.concat(chunks);
+            this.logger.debug("h3 request ←", {
+              ...meta,
+              status: res.statusCode,
+              httpVersion: res.httpVersion,
+              bytes: body.length,
+              ms: Date.now() - startedAt,
+            });
             resolve({
               status: res.statusCode ?? 0,
               httpVersion: res.httpVersion,
               headers: res.headers,
-              body: Buffer.concat(chunks),
+              body,
             });
           });
           res.on("error", onError);
@@ -68,11 +87,20 @@ export class QuicoHttp3Client implements Http3Client {
 
       const onError = (error: Error) => {
         clearTimeout(timer);
+        this.logger.debug("h3 request ✗", {
+          ...meta,
+          ms: Date.now() - startedAt,
+          err: error.message,
+        });
         reject(error);
       };
 
       const timer = setTimeout(() => {
         req.abort();
+        this.logger.warn("h3 request timed out", {
+          ...meta,
+          ms: Date.now() - startedAt,
+        });
         reject(new Error(`HTTP/3 request timed out after ${this.timeout}ms`));
       }, this.timeout);
 
