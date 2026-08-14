@@ -2,6 +2,8 @@ import type { ResolutionContext } from "inversify";
 import parseTorrent, { toMagnetURI } from "parse-torrent";
 import { Token } from "../../Token.ts";
 import { filterEmpty } from "../../utils/filterNull.ts";
+import { mapLimit } from "../../utils/mapLimit.ts";
+import { WOLFMAX4K_RESOLVE_CONCURRENCY } from "./concurrency.ts";
 import type { MovieAdapter } from "../MovieAdapter.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import type { Wolfmax4kWrapper } from "./Wolfmax4kWrapper.ts";
@@ -35,8 +37,10 @@ export class Wolfmax4kMovieAdapter implements MovieAdapter {
       movieName,
       editions: movies.length,
     });
-    const items = await Promise.all(
-      movies.map((movie) => this.extractMovie(movieName, movie)),
+    const items = await mapLimit(
+      movies,
+      WOLFMAX4K_RESOLVE_CONCURRENCY,
+      (movie) => this.extractMovie(movieName, movie),
     );
     const resolved = filterEmpty(items);
     this.logger.debug("findMovie done", {

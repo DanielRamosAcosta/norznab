@@ -20,6 +20,7 @@ export class EnlacitoResolver {
   private readonly baseUrl: string;
   private readonly passphrase: string;
   private readonly userAgent: string;
+  private readonly timeout: number;
   private readonly logger: Logger;
 
   // ROT13("wolfmax4k.com") — the constant fallback the s.php form posts back.
@@ -29,11 +30,13 @@ export class EnlacitoResolver {
     baseUrl = "https://enlacito.com",
     passphrase = "fee631d2cffda38a78b96ee6d2dfb43a",
     userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    timeout = 15_000,
     logger: Logger = new LoggerNoop(),
   ) {
     this.baseUrl = baseUrl;
     this.passphrase = passphrase;
     this.userAgent = userAgent;
+    this.timeout = timeout;
     this.logger = logger.forClass(EnlacitoResolver.name);
   }
 
@@ -52,6 +55,7 @@ export class EnlacitoResolver {
         "user-agent": this.userAgent,
         referer: "https://wolfmax4k.com/",
       },
+      signal: AbortSignal.timeout(this.timeout),
     });
     const cookie = (sResponse.headers.getSetCookie?.() ?? [])
       .map((entry) => entry.split(";")[0])
@@ -73,6 +77,7 @@ export class EnlacitoResolver {
         cookie,
       },
       body: `linkser=${EnlacitoResolver.LINKSER_FALLBACK}`,
+      signal: AbortSignal.timeout(this.timeout),
     });
     const html = await pageResponse.text();
 
