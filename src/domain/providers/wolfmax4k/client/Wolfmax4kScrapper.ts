@@ -28,7 +28,7 @@ export class Wolfmax4kScrapper implements Wolfmax4k {
 
   constructor(
     baseUrl = "https://wolfmax4k.com",
-    timeout = 30_000,
+    timeout = 15_000,
     http?: Http3Client,
     enlacito?: EnlacitoResolver,
     logger: Logger = new LoggerNoop(),
@@ -37,7 +37,8 @@ export class Wolfmax4kScrapper implements Wolfmax4k {
     this.logger = logger.forClass(Wolfmax4kScrapper.name);
     this.http = http ?? new QuicoHttp3Client(timeout, logger);
     this.enlacito =
-      enlacito ?? new EnlacitoResolver(undefined, undefined, undefined, logger);
+      enlacito ??
+      new EnlacitoResolver(undefined, undefined, undefined, timeout, logger);
   }
 
   async search(

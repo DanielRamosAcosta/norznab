@@ -30,19 +30,59 @@ export interface Http3Client {
 
 export class QuicoHttp3Client implements Http3Client {
   private readonly timeout: number;
+  private readonly retries: number;
   private readonly logger: Logger;
   private static counter = 0;
 
-  constructor(timeout = 30_000, logger: Logger = new LoggerNoop()) {
+  constructor(
+    timeout = 15_000,
+    logger: Logger = new LoggerNoop(),
+    retries = 2,
+  ) {
     this.timeout = timeout;
+    this.retries = retries;
     this.logger = logger.forClass(QuicoHttp3Client.name);
   }
 
-  send(options: Http3RequestOptions): Promise<Http3Response> {
+  async send(options: Http3RequestOptions): Promise<Http3Response> {
     const id = ++QuicoHttp3Client.counter;
+    let lastError: unknown;
+
+    // quico's QUIC session to Cloudflare is fragile when cold / under fan-out
+    // ("All protocols failed", multi-second stalls); a bounded retry recovers.
+    for (let attempt = 0; attempt <= this.retries; attempt++) {
+      try {
+        return await this.attempt(options, id, attempt);
+      } catch (error) {
+        lastError = error;
+        if (attempt < this.retries) {
+          this.logger.warn("h3 request retry", {
+            id,
+            attempt,
+            err: error instanceof Error ? error.message : String(error),
+          });
+          await delay(250 * (attempt + 1));
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  private attempt(
+    options: Http3RequestOptions,
+    id: number,
+    attempt: number,
+  ): Promise<Http3Response> {
     const method = options.method ?? "GET";
     const startedAt = Date.now();
-    const meta = { id, method, host: options.hostname, path: options.path };
+    const meta = {
+      id,
+      attempt,
+      method,
+      host: options.hostname,
+      path: options.path,
+    };
     this.logger.debug("h3 request →", meta);
 
     return new Promise((resolve, reject) => {
@@ -112,4 +152,8 @@ export class QuicoHttp3Client implements Http3Client {
       req.end();
     });
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

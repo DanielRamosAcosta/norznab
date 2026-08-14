@@ -77,7 +77,7 @@ if (config.ENABLE_WOLFMAX4K) {
     return new Wolfmax4kScrapperLocalCache(
       new Wolfmax4kScrapper(
         config.WOLFMAX4K_BASE_URL,
-        config.REQUEST_TIMEOUT_MS,
+        config.WOLFMAX4K_HTTP_TIMEOUT_MS,
         undefined,
         undefined,
         logger,

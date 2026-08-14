@@ -2,6 +2,8 @@ import type { ResolutionContext } from "inversify";
 import parseTorrent, { toMagnetURI } from "parse-torrent";
 import { Token } from "../../Token.ts";
 import { filterEmpty } from "../../utils/filterNull.ts";
+import { mapLimit } from "../../utils/mapLimit.ts";
+import { WOLFMAX4K_RESOLVE_CONCURRENCY } from "./concurrency.ts";
 import type { TVAdapter } from "../TVAdapter.ts";
 import {
   SearchCriteriaEpisode,
@@ -40,8 +42,10 @@ export class Wolfmax4kTVAdapter implements TVAdapter {
       name: criteria.name,
       matches: episodes.length,
     });
-    const items = await Promise.all(
-      episodes.map((episode) => this.extractEpisode(criteria.name, episode)),
+    const items = await mapLimit(
+      episodes,
+      WOLFMAX4K_RESOLVE_CONCURRENCY,
+      (episode) => this.extractEpisode(criteria.name, episode),
     );
     const resolved = filterEmpty(items);
     this.logger.debug("findBy done", {
