@@ -31,73 +31,65 @@ container.bind(Token.TMDB).toDynamicValue(TMDB.create);
 container.bind(Token.TVMAZE).toDynamicValue(TVMaze.create);
 
 // DonTorrent
-if (config.ENABLE_DON_TORRENT) {
-  // Clearnet is SNI-blocked from production; DON_TORRENT_USE_ONION swaps in the
-  // Tor (.onion) transport, keeping the same DonTorrent interface downstream.
-  const donTorrentScrapper = config.DON_TORRENT_USE_ONION
-    ? new DonTorrentOnionScrapper(
-        config.DON_TORRENT_ONION_URL,
-        config.DON_TORRENT_TOR_PROXY || undefined,
-        config.REQUEST_TIMEOUT_MS,
-      )
-    : new DonTorrentScrapper(
-        config.DON_TORRENT_BASE_URL,
-        config.REQUEST_TIMEOUT_MS,
-      );
-  container
-    .bind(Token.DONTORRENT_SCRAPPER)
-    .toConstantValue(new DonTorrentScrapperLocalCache(donTorrentScrapper));
-  container
-    .bind(Token.DONTORRENT_WRAPPER)
-    .toDynamicValue(DonTorrentWrapper.create);
-  container.bind(Token.TV_ADAPTER).toDynamicValue(DonTorrentTVAdapter.create);
-  container
-    .bind(Token.MOVIE_ADAPTER)
-    .toDynamicValue(DonTorrentMovieAdapter.create);
-}
+// Clearnet is SNI-blocked from production; DON_TORRENT_USE_ONION swaps in the
+// Tor (.onion) transport, keeping the same DonTorrent interface downstream.
+const donTorrentScrapper = config.DON_TORRENT_USE_ONION
+  ? new DonTorrentOnionScrapper(
+      config.DON_TORRENT_ONION_URL,
+      config.DON_TORRENT_TOR_PROXY || undefined,
+      config.REQUEST_TIMEOUT_MS,
+    )
+  : new DonTorrentScrapper(
+      config.DON_TORRENT_BASE_URL,
+      config.REQUEST_TIMEOUT_MS,
+    );
+container
+  .bind(Token.DONTORRENT_SCRAPPER)
+  .toConstantValue(new DonTorrentScrapperLocalCache(donTorrentScrapper));
+container
+  .bind(Token.DONTORRENT_WRAPPER)
+  .toDynamicValue(DonTorrentWrapper.create);
+container.bind(Token.TV_ADAPTER).toDynamicValue(DonTorrentTVAdapter.create);
+container
+  .bind(Token.MOVIE_ADAPTER)
+  .toDynamicValue(DonTorrentMovieAdapter.create);
 
 // MarcianoTorrent
-if (config.ENABLE_MARCIANO_TORRENT) {
-  container
-    .bind(Token.MARCIANOTORENT_SCRAPPER)
-    .toConstantValue(
-      new MarcianoTorrentScrapperLocalCache(
-        new MarcianoTorrentScrapper(
-          config.MARCIANO_TORRENT_BASE_URL,
-          config.REQUEST_TIMEOUT_MS,
-        ),
+container
+  .bind(Token.MARCIANOTORENT_SCRAPPER)
+  .toConstantValue(
+    new MarcianoTorrentScrapperLocalCache(
+      new MarcianoTorrentScrapper(
+        config.MARCIANO_TORRENT_BASE_URL,
+        config.REQUEST_TIMEOUT_MS,
       ),
-    );
-  container
-    .bind(Token.MARCIANOTORENT_WRAPPER)
-    .toDynamicValue(MarcianoTorrentWrapper.create);
-  container
-    .bind(Token.MOVIE_ADAPTER)
-    .toDynamicValue(MarcianoTorrentMovieAdapter.create);
-}
+    ),
+  );
+container
+  .bind(Token.MARCIANOTORENT_WRAPPER)
+  .toDynamicValue(MarcianoTorrentWrapper.create);
+container
+  .bind(Token.MOVIE_ADAPTER)
+  .toDynamicValue(MarcianoTorrentMovieAdapter.create);
 
 // Wolfmax4k
-if (config.ENABLE_WOLFMAX4K) {
-  container.bind(Token.WOLFMAX4K_SCRAPPER).toDynamicValue(async (context) => {
-    const logger = await context.getAsync<Logger>(Token.LOGGER);
-    return new Wolfmax4kScrapperLocalCache(
-      new Wolfmax4kScrapper(
-        config.WOLFMAX4K_BASE_URL,
-        config.WOLFMAX4K_HTTP_TIMEOUT_MS,
-        undefined,
-        undefined,
-        logger,
-      ),
-    );
-  });
-  container
-    .bind(Token.WOLFMAX4K_WRAPPER)
-    .toDynamicValue(Wolfmax4kWrapper.create);
-  container
-    .bind(Token.MOVIE_ADAPTER)
-    .toDynamicValue(Wolfmax4kMovieAdapter.create);
-  container.bind(Token.TV_ADAPTER).toDynamicValue(Wolfmax4kTVAdapter.create);
-}
+container.bind(Token.WOLFMAX4K_SCRAPPER).toDynamicValue(async (context) => {
+  const logger = await context.getAsync<Logger>(Token.LOGGER);
+  return new Wolfmax4kScrapperLocalCache(
+    new Wolfmax4kScrapper(
+      config.WOLFMAX4K_BASE_URL,
+      config.WOLFMAX4K_HTTP_TIMEOUT_MS,
+      undefined,
+      undefined,
+      logger,
+    ),
+  );
+});
+container.bind(Token.WOLFMAX4K_WRAPPER).toDynamicValue(Wolfmax4kWrapper.create);
+container
+  .bind(Token.MOVIE_ADAPTER)
+  .toDynamicValue(Wolfmax4kMovieAdapter.create);
+container.bind(Token.TV_ADAPTER).toDynamicValue(Wolfmax4kTVAdapter.create);
 
 container.bind(Token.LOGGER).toDynamicValue(LoggerPino.create);
 

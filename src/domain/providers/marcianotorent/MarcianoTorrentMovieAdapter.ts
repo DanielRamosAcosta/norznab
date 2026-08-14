@@ -6,8 +6,11 @@ import type { MarcianoTorrentSearchResult } from "./client/models/MarcianoTorren
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import type { MovieAdapter } from "../MovieAdapter.ts";
 import { toTorznabFormat } from "./toTorznabFormat.ts";
+import { ProviderSource } from "../ProviderSource.ts";
 
 export class MarcianoTorrentMovieAdapter implements MovieAdapter {
+  readonly source = ProviderSource.MARCIANOTORRENT;
+
   public static async create(context: ResolutionContext) {
     const wrapper = await context.getAsync<MarcianoTorrentWrapper>(
       Token.MARCIANOTORENT_WRAPPER,
@@ -41,7 +44,10 @@ export class MarcianoTorrentMovieAdapter implements MovieAdapter {
 
     return {
       type: "movie",
-      title: `${movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)} - MarcianoTorrent - (${metadata.format})`,
+      // Title with the source's real per-release name (result.title) instead of
+      // the search query, so a sequel / different film keeps its own title and
+      // Radarr can tell them apart.
+      title: `${result.title || movieName} (${metadata.year}) ${toTorznabFormat(metadata.format)}`,
       link,
       size: "length" in parsed ? (parsed.length ?? 0) : 0,
       category: 2000,
