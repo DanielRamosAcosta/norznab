@@ -3,6 +3,7 @@ import { z } from "zod";
 export const SearchTVResultSchema = z
   .object({
     adult: z.boolean(),
+    softcore: z.boolean(),
     backdrop_path: z.string().nullable(),
     id: z.number(),
     name: z.string(),
@@ -16,8 +17,7 @@ export const SearchTVResultSchema = z
     vote_average: z.number(),
     vote_count: z.number(),
     origin_country: z.array(z.string()),
-  })
-  .strict();
+  });
 
 export const SearchTVResponseSchema = z
   .object({
