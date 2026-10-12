@@ -6,7 +6,8 @@ export interface EliteTorrentSearchResult {
 }
 
 export interface EliteTorrentRelease {
-  /** Release name taken from the magnet `dn`, e.g. `Matrix (HDRip)`. */
+  /** Release name taken from the magnet `dn`, e.g. `Matrix (HDRip)`. Empty when
+   * the magnet carries no `dn` (as happens for some films, e.g. Dune). */
   name: string;
   /** Ready-to-use magnet URI. */
   magnet: string;
@@ -14,6 +15,14 @@ export interface EliteTorrentRelease {
   size: number;
   /** Publication date as an RFC-1123 string. */
   pubDate: string;
+  /** Raw `Calidad:` label from the detail page, e.g. `720p` or `BluRay 1080p`. */
+  quality: string;
+  /** Raw `Formato:` container from the detail page, e.g. `MP4` or `MKV`. */
+  format: string;
+  /** Natural language mapped to a Torznab token, e.g. `Spanish`. */
+  language: string;
+  /** Release year parsed from the detail page `Fecha:`, or null when absent. */
+  year: number | null;
 }
 
 export interface EliteTorrent {

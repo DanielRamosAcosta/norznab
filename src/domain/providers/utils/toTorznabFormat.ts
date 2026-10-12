@@ -1,7 +1,11 @@
 /**
- * Maps a wolfmax4k `calidad` string (e.g. "BluRay 1080p", "4KUHDremux",
- * "HDTV 720p AC3 5.1") into a resolution + source token that Sonarr/Radarr
- * release parsers understand (e.g. "1080p BluRay", "2160p Remux").
+ * Maps a free-form quality string (e.g. "BluRay 1080p", "4KUHDremux",
+ * "HDTV 720p AC3 5.1", "720p") into a resolution + source token that
+ * Sonarr/Radarr release parsers understand (e.g. "1080p BluRay", "2160p Remux").
+ *
+ * Shared by every source that scrapes a human-readable quality label off the
+ * page (wolfmax4k, EliteTorrent); the DonTorrent/Marciano providers have their
+ * own enum-typed mappers.
  */
 export function toTorznabFormat(quality: string): string {
   const value = quality.toLowerCase();

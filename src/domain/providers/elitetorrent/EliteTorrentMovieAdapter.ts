@@ -6,6 +6,7 @@ import type { MovieAdapter } from "../MovieAdapter.ts";
 import { ProviderSource } from "../ProviderSource.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import type { EliteTorrent } from "./client/EliteTorrent.ts";
+import { buildReleaseTitle } from "./buildReleaseTitle.ts";
 import type { Logger } from "../../services/Logger.ts";
 import { LoggerNoop } from "../../services/LoggerNoop.ts";
 
@@ -55,13 +56,15 @@ export class EliteTorrentMovieAdapter implements MovieAdapter {
         return {
           type: "movie",
           // The magnet's own display name is the real release name so Radarr
-          // parses the actual release (title + quality); fall back to the
-          // results-grid title when the magnet carries no name.
-          title: release.name || result.title,
+          // parses the actual release (title + quality). When the magnet
+          // carries no name (some films ship a dn-less magnet) a bare title is
+          // unparseable, so synthesize one from the detail-page metadata.
+          title: buildReleaseTitle(result.title, release),
           link: release.magnet,
           size: release.size,
           category: 2000,
           pubDate: release.pubDate,
+          language: release.language || undefined,
         };
       },
     );

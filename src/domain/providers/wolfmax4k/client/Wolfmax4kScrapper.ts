@@ -8,6 +8,7 @@ import { EnlacitoResolver } from "./EnlacitoResolver.ts";
 import {
   Wolfmax4kFindResponseSchema,
   isFindData,
+  type Wolfmax4kFindResponse,
 } from "./models/Wolfmax4kFindResponse.ts";
 import { Wolfmax4kSearchResult } from "./models/Wolfmax4kSearchResult.ts";
 import type { Wolfmax4kPageable } from "./models/Wolfmax4kPageable.ts";
@@ -45,7 +46,21 @@ export class Wolfmax4kScrapper implements Wolfmax4k {
     query: string,
     page = 0,
   ): Promise<Wolfmax4kPageable<Wolfmax4kSearchResult>> {
-    const data = await this.performSearch(query, page);
+    let data: Wolfmax4kFindResponse["data"];
+    try {
+      data = await this.performSearch(query, page);
+    } catch (error) {
+      // wolfmax4k migrated to wolftorrent.com: the old POST search endpoint and
+      // the CSRF token are gone (`/` now 301s with an empty body). A dead source
+      // must not take down the whole Torznab response — degrade to no results.
+      // See CLAUDE.md for the wolftorrent migration / Turnstile blocker.
+      this.logger.warn("wolfmax4k search failed; degrading to no results", {
+        query,
+        page,
+        err: error instanceof Error ? error.message : String(error),
+      });
+      return { items: [], meta: { page, size: 0, hasNext: false } };
+    }
 
     if (!isFindData(data)) {
       return { items: [], meta: { page, size: 0, hasNext: false } };

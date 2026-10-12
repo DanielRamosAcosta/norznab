@@ -93,4 +93,18 @@ describe("Wolfmax4kScrapper.search", () => {
     expect(items).toHaveLength(0);
     expect(meta.hasNext).toBe(false);
   });
+
+  it("degrades to an empty page instead of throwing when the token is gone", async () => {
+    // wolfmax4k migrated to wolftorrent.com: `/` now 301s with an empty body,
+    // so getToken() can't find a CSRF token. A dead source must not take down
+    // the whole Torznab response.
+    const http: Http3Client = {
+      send: vi.fn(async () => response("")), // no token, no JSON
+    };
+    const scrapper = new Wolfmax4kScrapper("https://wolfmax4k.com", 1000, http);
+
+    const { items, meta } = await scrapper.search("Superman");
+    expect(items).toHaveLength(0);
+    expect(meta.hasNext).toBe(false);
+  });
 });
