@@ -14,7 +14,7 @@ import {
 import type { TorznabItemTV } from "../../models/TorznabItemTV.ts";
 import type { Wolfmax4kWrapper } from "./Wolfmax4kWrapper.ts";
 import type { Wolfmax4kSearchResult } from "./client/models/Wolfmax4kSearchResult.ts";
-import { toTorznabFormat } from "./toTorznabFormat.ts";
+import { toTorznabFormat } from "../utils/toTorznabFormat.ts";
 import type { Logger } from "../../services/Logger.ts";
 import { LoggerNoop } from "../../services/LoggerNoop.ts";
 

@@ -73,6 +73,10 @@ export class EliteTorrentScrapper implements EliteTorrent {
       magnet,
       size: this.extractSize($),
       pubDate: this.extractPubDate($),
+      quality: this.extractQuality($),
+      format: this.extractLabel($, "Formato"),
+      language: this.extractLanguage($),
+      year: this.extractYear($),
     };
   }
 
@@ -109,12 +113,75 @@ export class EliteTorrentScrapper implements EliteTorrent {
   }
 
   private extractPubDate($: CheerioAPI): string {
+    const date = this.extractDateParts($);
+    if (!date) return new Date(0).toUTCString();
+    const { yyyy, mm, dd } = date;
+    return new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`).toUTCString();
+  }
+
+  private extractYear($: CheerioAPI): number | null {
+    const year = this.extractDateParts($)?.yyyy;
+    return year ? parseInt(year, 10) : null;
+  }
+
+  /**
+   * Reads the `Fecha:` value, which comes in two shapes across the site:
+   * `DD-MM-YYYY` on torrent detail pages and `YYYY-MM-DD` on film sheets.
+   */
+  private extractDateParts(
+    $: CheerioAPI,
+  ): { yyyy: string; mm: string; dd: string } | null {
+    const text = $.root().text();
+    const dmy = text.match(/Fecha:?\s*(\d{2})-(\d{2})-(\d{4})/);
+    if (dmy) return { dd: dmy[1], mm: dmy[2], yyyy: dmy[3] };
+    const ymd = text.match(/Fecha:?\s*(\d{4})-(\d{2})-(\d{2})/);
+    if (ymd) return { yyyy: ymd[1], mm: ymd[2], dd: ymd[3] };
+    return null;
+  }
+
+  // A value that an *arr parser reads as a real video quality (resolution or
+  // known source), used to tell `Calidad: 720p` from a `Calidad: 9.1` rating.
+  private static readonly VIDEO_QUALITY =
+    /^(2160p|1080p|720p|480p|4k|uhd|bluray|bdremux|bdrip|brrip|webrip|web-?dl|hdrip|hdtv|dvdrip|microhd|cam|ts|screener|remux)/i;
+
+  /**
+   * Reads the video `Calidad:` from the detail page. The sheet can also carry a
+   * numeric `Calidad:` rating (e.g. `9.1`), so scan every occurrence and keep
+   * the first that looks like an actual video quality.
+   */
+  private extractQuality($: CheerioAPI): string {
+    const text = $.root().text();
+    for (const match of text.matchAll(/Calidad:\s*([A-Za-z0-9.+-]+)/gi)) {
+      const value = match[1].trim();
+      if (EliteTorrentScrapper.VIDEO_QUALITY.test(value)) return value;
+    }
+    return "";
+  }
+
+  /**
+   * Reads a single-word technical field (`Formato: MP4`) from the detail-page
+   * text. Values are single tokens, so stop at the first space.
+   */
+  private extractLabel($: CheerioAPI, label: string): string {
     const match = $.root()
       .text()
-      .match(/Fecha:?\s*(\d{2})-(\d{2})-(\d{4})/);
-    if (!match) return new Date(0).toUTCString();
-    const [, dd, mm, yyyy] = match;
-    return new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`).toUTCString();
+      .match(new RegExp(`${label}:\\s*([A-Za-z0-9.+-]+)`, "i"));
+    return match ? match[1].trim() : "";
+  }
+
+  /**
+   * Reads `Idioma:` and maps it to a Torznab language token Radarr understands.
+   * Spanish is the common case on this site; English is mapped too, anything
+   * else is passed through so a profile can still match it.
+   */
+  private extractLanguage($: CheerioAPI): string {
+    const match = $.root()
+      .text()
+      .match(/Idioma:\s*([A-Za-zÁÉÍÓÚáéíóúñÑ]+)/);
+    const raw = match ? match[1].toLowerCase() : "";
+    if (/espa|castellano|latino/.test(raw)) return "Spanish";
+    if (/ingl|english/.test(raw)) return "English";
+    return match ? match[1] : "";
   }
 
   private tokenFromHref(href: string | undefined): string | null {

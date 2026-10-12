@@ -139,7 +139,33 @@ client-side obfuscation — `base64`×N wrapping a `ROT13` payload — of the re
 `magnet:` / on-site `.torrent` path, so `decodeEliteLink` peels it and the
 ad-gate is skipped entirely. The magnet's `dn` is used as the release name.
 
+**Release title fallback.** Some films (e.g. Dune) ship a magnet with no `dn`,
+leaving only the bare sheet title (`Dune: Parte dos`) — which Radarr parses to
+quality `Unknown` and rejects with "Unable to parse release". So when the name
+carries no quality token, `buildReleaseTitle.ts` synthesizes a parseable title
+from the detail-page technical block (`Fecha:`/`Calidad:`/`Formato:`/`Idioma:`,
+e.g. `Dune: Parte dos 2024 720p MP4 Spanish`), mapping the quality through the
+shared `providers/utils/toTorznabFormat.ts`. Note the `Fecha:` value comes as
+`DD-MM-YYYY` on torrent pages but `YYYY-MM-DD` on film sheets.
+
 ### wolfmax4k (`src/domain/providers/wolfmax4k/`)
+
+> **⚠️ BROKEN — source migrated (2026-10).** `wolfmax4k.com/` now `301`s (empty
+> body) to **`wolftorrent.com`**, which dropped the entire flow described below:
+> no CSRF token, no `POST /mvc/controllers/data.find.php` (now `404`). The new
+> site is a plain server-rendered WordPress-style listing — search is
+> `GET /buscar?q=<query>` (TCP works, **no SNI block**, so HTTP/3 is not even
+> needed) returning `article.wolf-card` results. **But downloads are now gated
+> by Cloudflare Turnstile**: the `.torrent` is only released after
+> `POST /api/descargas {action:"generate"}` → solve a Turnstile/hCaptcha →
+> `POST {action:"validate", "cf-turnstile-response"}` → `download_url`. That
+> captcha is not solvable server-side (would need a paid solver or a headless
+> browser), and direct `/torrents/...` paths `404`. So the scraper is NOT
+> reworked for wolftorrent; instead `Wolfmax4kScrapper.search` now **degrades to
+> an empty page instead of throwing** when the token lookup fails, so a dead
+> source can't take down the whole Torznab response. Reworking it would mean
+> scraping `GET /buscar?q=` for titles (easy) but has no viable download path
+> until the Turnstile gate is handled. The notes below describe the OLD flow.
 
 wolfmax4k needs a bespoke transport and download flow; the details are
 non-obvious:

@@ -10,6 +10,43 @@ import type {
 const MAGNET_TOKEN =
   "VjJ4amQwMVZNVWRpUm14VVlsUldVVmxYY0hObFZtUjFZak5vYVUxWVFsbFZiRkpoWVZVeGRGVlliR0ZTYkVveldrWmtTbVZzUm5WaFIzQnBZWHBGZWxaR1dsTlRiVlp5VGxWV1YxWkZjRkJhVnpGcVRWWk9kRTFFUms5aVIzY3lXa1ZvYjFkc1drVlNiV2hhWWxSR2NsbHJaRk5rUjAxNlUydDBWMUpYYzNkV2JYaGhVakZLZEZWdVVsVldNMmhQV1ZjeE1HVldUbk5WYTNCUFVteGFNVmxyVWt0WlZUQjNZMFZzV0ZaNlJsaFphMlJQWkVaS2RFNVZNV2xXVm04eFZqSTFjMVp0VmxaUFZrcFJWa1JCT1E9PQ==";
 
+// Mirror of the client-side obfuscation (ROT13 then base64 x5) so we can mint
+// ad-gate tokens for fixtures — in particular a magnet with no `dn`.
+function rot13(value: string): string {
+  return value.replace(/[a-zA-Z]/g, (char) => {
+    const base = char <= "Z" ? 65 : 97;
+    return String.fromCharCode(((char.charCodeAt(0) - base + 13) % 26) + base);
+  });
+}
+
+function encodeEliteToken(target: string): string {
+  let payload = rot13(target);
+  for (let i = 0; i < 5; i++) {
+    payload = Buffer.from(payload, "utf8").toString("base64");
+  }
+  return payload;
+}
+
+// A magnet with no `dn` at all — the shape that produced the Dune bug: the
+// release name came out empty and the title fell back to the bare sheet title.
+const NO_DN_MAGNET = "magnet:?xt=urn:btih:abcdef0123456789";
+const NO_DN_TOKEN = encodeEliteToken(NO_DN_MAGNET);
+
+// A film sheet whose magnet carries no `dn`; the quality lives in the technical
+// info block (note the `YYYY-MM-DD` date shape used on sheets).
+const DUNE_HTML = `
+<h1>Descargar Dune: Parte dos por torrent</h1>
+<div class="ficha_datos">
+  <p><b>Fecha</b>: 2024-02-27</p>
+  <p><b>Tamaño</b>: 2.51 GB</p>
+  <p><b>Idioma</b>: Español</p>
+  <p><b>Formato</b>: MP4</p>
+  <p><b>Calidad</b>: 720p</p>
+</div>
+<div class="ficha_descarga_opciones">
+  <a href="https://acortame-esto.com/s.php?i=${NO_DN_TOKEN}" class="enlace_torrent">Descargar por magnet link</a>
+</div>`;
+
 const SEARCH_HTML = `
 <div class="pelicula">
   <div class="imagen"><a href="https://www.elitetorrent.com/peliculas/matrix-hdrip-bittorrent-hd-1/" title="Matrix (HDRip)"><img src="x"></a></div>
@@ -89,5 +126,32 @@ describe("EliteTorrentScrapper", () => {
   it("returns null for a detail page with no download", async () => {
     const s = scrapper({ "/peliculas/x/": NO_DOWNLOAD_HTML });
     expect(await s.getRelease("/peliculas/x/")).toBeNull();
+  });
+
+  it("extracts quality/format/language/year when the magnet has no dn", async () => {
+    const s = scrapper({ "/peliculas/dune-parte-dos/": DUNE_HTML });
+    const release = await s.getRelease("/peliculas/dune-parte-dos/");
+
+    expect(release).not.toBeNull();
+    // No `dn` on the magnet -> empty name, which is what forced the bare title.
+    expect(release?.name).toBe("");
+    expect(release?.magnet).toBe(NO_DN_MAGNET);
+    expect(release?.quality).toBe("720p");
+    expect(release?.format).toBe("MP4");
+    expect(release?.language).toBe("Spanish");
+    expect(release?.year).toBe(2024);
+    // `YYYY-MM-DD` sheet date is parsed too (not just `DD-MM-YYYY`).
+    expect(release?.pubDate).toContain("27 Feb 2024");
+    expect(release?.size).toBe(Math.round(2.51 * 1024 ** 3));
+  });
+
+  it("ignores a numeric Calidad rating and keeps the real video quality", async () => {
+    const html = DUNE_HTML.replace(
+      "<p><b>Calidad</b>: 720p</p>",
+      "<p><b>Calidad</b>: 9.1</p>\n  <p><b>Calidad</b>: 1080p</p>",
+    );
+    const s = scrapper({ "/peliculas/dune-parte-dos/": html });
+    const release = await s.getRelease("/peliculas/dune-parte-dos/");
+    expect(release?.quality).toBe("1080p");
   });
 });
