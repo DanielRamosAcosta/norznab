@@ -125,16 +125,16 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   private extractSearchElements($: CheerioAPI) {
-    return $("#buscador p a")
+    return $("#buscador li.search-result")
       .toArray()
       .map((element) => {
         const $el = $(element);
-        const $p = $el.closest("p");
-        const $badge = $p.find(".badge");
-        const name = $el.text().trim();
+        const $link = $el.find("a.search-result-link");
+        const $badge = $el.find(".badge");
+        const name = $link.text().trim().replace(/\.$/, "");
 
         const result = new DonTorrentSearchResult(
-          $el.attr("href") || "",
+          $link.attr("href") || "",
           name,
           parseDonTorrentMediaType($badge.text().trim()),
         );
