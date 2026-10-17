@@ -42,8 +42,6 @@ describe("DonTorrentScrapper (búsqueda sin resultados)", () => {
   });
 });
 
-// A minimal page: #buscador present but empty, so search returns no items —
-// enough to exercise the transport/domain plumbing without caring about parsing.
 const PAGE_HTML = `<html><body><div id="buscador"></div></body></html>`;
 
 function htmlResponse(html: string, url: string): Response {
@@ -51,8 +49,6 @@ function htmlResponse(html: string, url: string): Response {
     status: 200,
     headers: { "content-type": "text/html" },
   });
-  // Response.url is read-only and empty for synthetic responses; override it to
-  // simulate the final URL ky sees after following DonTorrent's domain redirect.
   Object.defineProperty(response, "url", { value: url, configurable: true });
   return response;
 }
@@ -85,8 +81,6 @@ describe("DonTorrentScrapper (dominio dinámico + fetch inyectado)", () => {
 
   it("aprende el dominio nuevo tras un 301 y enruta las siguientes peticiones a él", async () => {
     const urls: string[] = [];
-    // The first request chases the 301: ky follows it, so the response URL ky
-    // sees is already the new domain. The second request must go there directly.
     const injectedFetch = vi.fn(
       async (input: string | URL | Request): Promise<Response> => {
         const requested = requestedUrl(input);

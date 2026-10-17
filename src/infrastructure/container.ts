@@ -34,11 +34,6 @@ container.bind(Token.TMDB).toDynamicValue(TMDB.create);
 container.bind(Token.TVMAZE).toDynamicValue(TVMaze.create);
 
 // DonTorrent
-// Clearnet is SNI-blocked from production. Preferred route: DON_TORRENT_USE_TOR
-// keeps the normal clearnet scrapper but tunnels it through a Tor exit node
-// (dodges the ISP's SNI-DPI without touching the dead .onion). DON_TORRENT_USE_ONION
-// is the legacy Tor hidden-service route, dormant because the onion no longer
-// resolves. Both keep the same DonTorrent interface downstream.
 container.bind(Token.DONTORRENT_SCRAPPER).toDynamicValue(async (context) => {
   const logger = await context.getAsync<Logger>(Token.LOGGER);
   const { DON_TORRENT_BASE_URL: base, REQUEST_TIMEOUT_MS: timeout } = config;

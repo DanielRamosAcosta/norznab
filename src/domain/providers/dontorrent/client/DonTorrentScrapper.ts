@@ -18,11 +18,6 @@ import type { Logger } from "../../../services/Logger.ts";
 import { LoggerNoop } from "../../../services/LoggerNoop.ts";
 
 export interface DonTorrentScrapperOptions {
-  /**
-   * Custom `fetch` used for every request (search, proof-of-work, download).
-   * Injected to route DonTorrent over Tor (see {@link TorFetch}); defaults to
-   * the global `fetch` (direct clearnet).
-   */
   fetch?: TorFetch;
   logger?: Logger;
 }
@@ -35,14 +30,6 @@ export class DonTorrentScrapper implements DonTorrent {
   private client: KyInstance;
   private readonly fetchImpl: TorFetch;
   private readonly logger: Logger;
-
-  /**
-   * Current base origin. Mutable: DonTorrent rotates its domain every so often
-   * with a `301`, and {@link observeDomain} relearns the new origin at runtime
-   * from the final response URL so later requests skip the redirect hop. Held
-   * in memory only — on restart the first request re-learns it by chaining the
-   * `301` from the last seeded domain.
-   */
   private baseUrl: string;
 
   private static readonly PAGE_SIZE = 30;
@@ -64,13 +51,6 @@ export class DonTorrentScrapper implements DonTorrent {
     });
   }
 
-  /**
-   * Wrap a fetch so every response — search, metadata, proof-of-work and
-   * download alike — is checked for a rotated domain in one place, rather than
-   * calling observeDomain() at each call site (and forgetting some). Unlike ky's
-   * afterResponse hook, this sees the real Response before ky clones it, so
-   * `response.url` is intact.
-   */
   private withDomainObservation(inner: TorFetch): TorFetch {
     return async (input, init) => {
       const response = await inner(input, init);
@@ -79,23 +59,13 @@ export class DonTorrentScrapper implements DonTorrent {
     };
   }
 
-  /**
-   * Build an absolute URL against the current {@link baseUrl}. We resolve URLs
-   * ourselves instead of using ky's `prefixUrl` because `prefixUrl` is frozen at
-   * `create()` time and we need to follow the domain if it rotates.
-   */
   private url(pathOrName: string): string {
     return new URL(pathOrName, `${this.baseUrl}/`).href;
   }
 
-  /**
-   * Learn a rotated domain from a response. DonTorrent's old domain `301`s to
-   * the new one; the transport follows the redirect, so the final `response.url`
-   * host differs from our configured origin. Log it once and adopt the new one.
-   */
   private observeDomain(responseUrl: string): void {
     if (!responseUrl) {
-      return; // e.g. synthetic Response in tests has an empty url
+      return;
     }
     let origin: string;
     try {
@@ -317,8 +287,6 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   async download(url: string) {
-    // Use the injected fetch (Tor when enabled): the download URL is a clearnet
-    // DonTorrent host too, so it would hit the same SNI block over a plain fetch.
     const response = await this.fetchImpl(url);
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);

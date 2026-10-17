@@ -7,15 +7,7 @@ const boolFromEnvDefaultFalse = z
 
 export const ConfigSchema = z.object({
   DON_TORRENT_BASE_URL: z.string(),
-  // DonTorrent clearnet is SNI-blocked from production. The robust path is to
-  // reach the CLEARNET site through a Tor exit node (the circuit dodges the
-  // ISP's local DPI): DON_TORRENT_USE_TOR routes the normal clearnet scrapper
-  // over the Tor HTTP proxy at DON_TORRENT_TOR_PROXY. Preferred over the .onion
-  // route below, whose hidden service is currently dead (HSDir unreachable).
   DON_TORRENT_USE_TOR: boolFromEnvDefaultFalse,
-  // Legacy: reach DonTorrent's Tor (.onion) hidden service instead. Kept but
-  // dormant — the onion descriptor is not published anymore, so it resolves to
-  // nothing. Requires the same DON_TORRENT_TOR_PROXY.
   DON_TORRENT_USE_ONION: boolFromEnvDefaultFalse,
   DON_TORRENT_ONION_URL: z
     .string()
