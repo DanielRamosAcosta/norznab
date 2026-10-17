@@ -4,6 +4,7 @@ import { Token } from "../domain/Token.ts";
 import { TMDB } from "../domain/clients/tmdb/TMDB.ts";
 import { DonTorrentScrapper } from "../domain/providers/dontorrent/client/DonTorrentScrapper.ts";
 import { DonTorrentOnionScrapper } from "../domain/providers/dontorrent/client/DonTorrentOnionScrapper.ts";
+import { createTorFetch } from "../domain/providers/dontorrent/client/DonTorrentTorFetch.ts";
 import { DonTorrentWrapper } from "../domain/providers/dontorrent/DonTorrentWrapper.ts";
 import { DonTorrentTVAdapter } from "../domain/providers/dontorrent/DonTorrentTVAdapter.ts";
 import { DonTorrentMovieAdapter } from "../domain/providers/dontorrent/DonTorrentMovieAdapter.ts";
@@ -33,21 +34,25 @@ container.bind(Token.TMDB).toDynamicValue(TMDB.create);
 container.bind(Token.TVMAZE).toDynamicValue(TVMaze.create);
 
 // DonTorrent
-// Clearnet is SNI-blocked from production; DON_TORRENT_USE_ONION swaps in the
-// Tor (.onion) transport, keeping the same DonTorrent interface downstream.
-const donTorrentScrapper = config.DON_TORRENT_USE_ONION
-  ? new DonTorrentOnionScrapper(
-      config.DON_TORRENT_ONION_URL,
-      config.DON_TORRENT_TOR_PROXY || undefined,
-      config.REQUEST_TIMEOUT_MS,
-    )
-  : new DonTorrentScrapper(
-      config.DON_TORRENT_BASE_URL,
-      config.REQUEST_TIMEOUT_MS,
-    );
-container
-  .bind(Token.DONTORRENT_SCRAPPER)
-  .toConstantValue(new DonTorrentScrapperLocalCache(donTorrentScrapper));
+container.bind(Token.DONTORRENT_SCRAPPER).toDynamicValue(async (context) => {
+  const logger = await context.getAsync<Logger>(Token.LOGGER);
+  const { DON_TORRENT_BASE_URL: base, REQUEST_TIMEOUT_MS: timeout } = config;
+
+  const scrapper = config.DON_TORRENT_USE_TOR
+    ? new DonTorrentScrapper(base, timeout, {
+        fetch: createTorFetch(config.DON_TORRENT_TOR_PROXY, timeout),
+        logger,
+      })
+    : config.DON_TORRENT_USE_ONION
+      ? new DonTorrentOnionScrapper(
+          config.DON_TORRENT_ONION_URL,
+          config.DON_TORRENT_TOR_PROXY || undefined,
+          timeout,
+        )
+      : new DonTorrentScrapper(base, timeout, { logger });
+
+  return new DonTorrentScrapperLocalCache(scrapper);
+});
 container
   .bind(Token.DONTORRENT_WRAPPER)
   .toDynamicValue(DonTorrentWrapper.create);

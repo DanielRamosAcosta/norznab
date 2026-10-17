@@ -7,9 +7,7 @@ const boolFromEnvDefaultFalse = z
 
 export const ConfigSchema = z.object({
   DON_TORRENT_BASE_URL: z.string(),
-  // DonTorrent clearnet is SNI-blocked from production; when enabled, reach it
-  // over its Tor (.onion) service instead. Requires a Tor HTTP proxy
-  // (HTTPTunnelPort) reachable at DON_TORRENT_TOR_PROXY.
+  DON_TORRENT_USE_TOR: boolFromEnvDefaultFalse,
   DON_TORRENT_USE_ONION: boolFromEnvDefaultFalse,
   DON_TORRENT_ONION_URL: z
     .string()

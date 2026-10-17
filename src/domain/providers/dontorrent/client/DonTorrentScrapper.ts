@@ -13,6 +13,14 @@ import type {
   DonTorrentPageableMeta,
 } from "./models/DonTorrentPageable.ts";
 import type { DonTorrent } from "./DonTorrent.ts";
+import type { TorFetch } from "./DonTorrentTorFetch.ts";
+import type { Logger } from "../../../services/Logger.ts";
+import { LoggerNoop } from "../../../services/LoggerNoop.ts";
+
+export interface DonTorrentScrapperOptions {
+  fetch?: TorFetch;
+  logger?: Logger;
+}
 
 export class DonTorrentScrapper implements DonTorrent {
   public static create() {
@@ -20,15 +28,58 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   private client: KyInstance;
+  private readonly fetchImpl: TorFetch;
+  private readonly logger: Logger;
+  private baseUrl: string;
 
   private static readonly PAGE_SIZE = 30;
 
-  constructor(baseUrl = "https://dontorrent.management", timeout = 30_000) {
+  constructor(
+    baseUrl = "https://dontorrent.management",
+    timeout = 30_000,
+    options: DonTorrentScrapperOptions = {},
+  ) {
+    this.baseUrl = baseUrl.replace(/\/$/, "");
+    this.logger = (options.logger ?? new LoggerNoop()).forClass(
+      DonTorrentScrapper.name,
+    );
+    this.fetchImpl = this.withDomainObservation(options.fetch ?? fetch);
     this.client = ky.create({
-      prefixUrl: baseUrl,
       retry: 0,
       timeout,
+      fetch: this.fetchImpl,
     });
+  }
+
+  private withDomainObservation(inner: TorFetch): TorFetch {
+    return async (input, init) => {
+      const response = await inner(input, init);
+      this.observeDomain(response.url);
+      return response;
+    };
+  }
+
+  private url(pathOrName: string): string {
+    return new URL(pathOrName, `${this.baseUrl}/`).href;
+  }
+
+  private observeDomain(responseUrl: string): void {
+    if (!responseUrl) {
+      return;
+    }
+    let origin: string;
+    try {
+      origin = new URL(responseUrl).origin;
+    } catch {
+      return;
+    }
+    if (origin !== this.baseUrl) {
+      this.logger.warn("DonTorrent domain changed", {
+        from: this.baseUrl,
+        to: origin,
+      });
+      this.baseUrl = origin;
+    }
   }
 
   async search(
@@ -40,7 +91,7 @@ export class DonTorrentScrapper implements DonTorrent {
     form.append("Buscar", "Buscar");
     form.append("p", (page + 1).toString()); // API is 1-indexed
 
-    const response = await this.client.post("buscar", {
+    const response = await this.client.post(this.url("buscar"), {
       body: form,
     });
 
@@ -95,7 +146,7 @@ export class DonTorrentScrapper implements DonTorrent {
   async getShowSeasonMetadata(
     path: string,
   ): Promise<DonTorrentShowSeasonMetadata> {
-    const response = await this.client.get(path.replace("/", ""));
+    const response = await this.client.get(this.url(path));
     const html = await response.text();
     const $ = cheerio.load(html);
 
@@ -128,7 +179,7 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   async getMovieMetadata(path: string): Promise<DonTorrentMovieMetadata> {
-    const response = await this.client.get(path.replace("/", ""));
+    const response = await this.client.get(this.url(path));
     const html = await response.text();
     const $ = cheerio.load(html);
     const downloadButton = $("[data-content-id]").first();
@@ -162,13 +213,16 @@ export class DonTorrentScrapper implements DonTorrent {
     contentId: number,
     table: string,
   ): Promise<string> {
-    const generateResponse = await this.client.post("api_validate_pow.php", {
-      json: {
-        action: "generate",
-        content_id: contentId,
-        tabla: table,
+    const generateResponse = await this.client.post(
+      this.url("api_validate_pow.php"),
+      {
+        json: {
+          action: "generate",
+          content_id: contentId,
+          tabla: table,
+        },
       },
-    });
+    );
 
     const generateResult = await generateResponse.json<{
       success: boolean;
@@ -184,7 +238,7 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   private async validateChallenge(challenge: string, nonce: number) {
-    const response = await this.client.post("api_validate_pow.php", {
+    const response = await this.client.post(this.url("api_validate_pow.php"), {
       json: {
         action: "validate",
         challenge: challenge,
@@ -233,7 +287,7 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   async download(url: string) {
-    const response = await fetch(url);
+    const response = await this.fetchImpl(url);
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }
