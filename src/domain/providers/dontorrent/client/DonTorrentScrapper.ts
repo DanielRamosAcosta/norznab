@@ -13,6 +13,19 @@ import type {
   DonTorrentPageableMeta,
 } from "./models/DonTorrentPageable.ts";
 import type { DonTorrent } from "./DonTorrent.ts";
+import type { TorFetch } from "./DonTorrentTorFetch.ts";
+import type { Logger } from "../../../services/Logger.ts";
+import { LoggerNoop } from "../../../services/LoggerNoop.ts";
+
+export interface DonTorrentScrapperOptions {
+  /**
+   * Custom `fetch` used for every request (search, proof-of-work, download).
+   * Injected to route DonTorrent over Tor (see {@link TorFetch}); defaults to
+   * the global `fetch` (direct clearnet).
+   */
+  fetch?: TorFetch;
+  logger?: Logger;
+}
 
 export class DonTorrentScrapper implements DonTorrent {
   public static create() {
@@ -20,15 +33,71 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   private client: KyInstance;
+  private readonly fetchImpl: TorFetch;
+  private readonly logger: Logger;
+
+  /**
+   * Current base origin. Mutable: DonTorrent rotates its domain every so often
+   * with a `301`, and {@link observeDomain} relearns the new origin at runtime
+   * from the final response URL so later requests skip the redirect hop. Held
+   * in memory only — on restart the first request re-learns it by chaining the
+   * `301` from the last seeded domain.
+   */
+  private baseUrl: string;
 
   private static readonly PAGE_SIZE = 30;
 
-  constructor(baseUrl = "https://dontorrent.management", timeout = 30_000) {
+  constructor(
+    baseUrl = "https://dontorrent.management",
+    timeout = 30_000,
+    options: DonTorrentScrapperOptions = {},
+  ) {
+    this.baseUrl = baseUrl.replace(/\/$/, "");
+    this.logger = (options.logger ?? new LoggerNoop()).forClass(
+      DonTorrentScrapper.name,
+    );
+    this.fetchImpl = options.fetch ?? fetch;
     this.client = ky.create({
-      prefixUrl: baseUrl,
       retry: 0,
       timeout,
+      fetch: this.fetchImpl,
     });
+  }
+
+  /**
+   * Build an absolute URL against the current {@link baseUrl}. We resolve URLs
+   * ourselves instead of using ky's `prefixUrl` because `prefixUrl` is frozen at
+   * `create()` time and we need to follow the domain if it rotates.
+   */
+  private url(pathOrName: string): string {
+    return new URL(pathOrName, `${this.baseUrl}/`).href;
+  }
+
+  /**
+   * Learn a rotated domain from a response. DonTorrent's old domain `301`s to
+   * the new one; ky follows the redirect, so the final `response.url` host
+   * differs from our configured origin. Log it once and adopt the new origin.
+   *
+   * Called on the response object returned by ky (not via an afterResponse hook:
+   * ky clones the response for hooks and the clone loses `url`).
+   */
+  private observeDomain(responseUrl: string): void {
+    if (!responseUrl) {
+      return; // e.g. synthetic Response in tests has an empty url
+    }
+    let origin: string;
+    try {
+      origin = new URL(responseUrl).origin;
+    } catch {
+      return;
+    }
+    if (origin && origin !== this.baseUrl) {
+      this.logger.warn("DonTorrent domain changed", {
+        from: this.baseUrl,
+        to: origin,
+      });
+      this.baseUrl = origin;
+    }
   }
 
   async search(
@@ -40,9 +109,10 @@ export class DonTorrentScrapper implements DonTorrent {
     form.append("Buscar", "Buscar");
     form.append("p", (page + 1).toString()); // API is 1-indexed
 
-    const response = await this.client.post("buscar", {
+    const response = await this.client.post(this.url("buscar"), {
       body: form,
     });
+    this.observeDomain(response.url);
 
     const html = await response.text();
     const $ = cheerio.load(html);
@@ -95,7 +165,8 @@ export class DonTorrentScrapper implements DonTorrent {
   async getShowSeasonMetadata(
     path: string,
   ): Promise<DonTorrentShowSeasonMetadata> {
-    const response = await this.client.get(path.replace("/", ""));
+    const response = await this.client.get(this.url(path));
+    this.observeDomain(response.url);
     const html = await response.text();
     const $ = cheerio.load(html);
 
@@ -128,7 +199,8 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   async getMovieMetadata(path: string): Promise<DonTorrentMovieMetadata> {
-    const response = await this.client.get(path.replace("/", ""));
+    const response = await this.client.get(this.url(path));
+    this.observeDomain(response.url);
     const html = await response.text();
     const $ = cheerio.load(html);
     const downloadButton = $("[data-content-id]").first();
@@ -162,13 +234,16 @@ export class DonTorrentScrapper implements DonTorrent {
     contentId: number,
     table: string,
   ): Promise<string> {
-    const generateResponse = await this.client.post("api_validate_pow.php", {
-      json: {
-        action: "generate",
-        content_id: contentId,
-        tabla: table,
+    const generateResponse = await this.client.post(
+      this.url("api_validate_pow.php"),
+      {
+        json: {
+          action: "generate",
+          content_id: contentId,
+          tabla: table,
+        },
       },
-    });
+    );
 
     const generateResult = await generateResponse.json<{
       success: boolean;
@@ -184,7 +259,7 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   private async validateChallenge(challenge: string, nonce: number) {
-    const response = await this.client.post("api_validate_pow.php", {
+    const response = await this.client.post(this.url("api_validate_pow.php"), {
       json: {
         action: "validate",
         challenge: challenge,
@@ -233,7 +308,9 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   async download(url: string) {
-    const response = await fetch(url);
+    // Use the injected fetch (Tor when enabled): the download URL is a clearnet
+    // DonTorrent host too, so it would hit the same SNI block over a plain fetch.
+    const response = await this.fetchImpl(url);
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }
