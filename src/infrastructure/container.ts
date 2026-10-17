@@ -41,42 +41,22 @@ container.bind(Token.TVMAZE).toDynamicValue(TVMaze.create);
 // resolves. Both keep the same DonTorrent interface downstream.
 container.bind(Token.DONTORRENT_SCRAPPER).toDynamicValue(async (context) => {
   const logger = await context.getAsync<Logger>(Token.LOGGER);
+  const { DON_TORRENT_BASE_URL: base, REQUEST_TIMEOUT_MS: timeout } = config;
 
-  if (config.DON_TORRENT_USE_TOR) {
-    return new DonTorrentScrapperLocalCache(
-      new DonTorrentScrapper(
-        config.DON_TORRENT_BASE_URL,
-        config.REQUEST_TIMEOUT_MS,
-        {
-          fetch: createTorFetch(
-            config.DON_TORRENT_TOR_PROXY,
-            config.REQUEST_TIMEOUT_MS,
-          ),
-          logger,
-        },
-      ),
-    );
-  }
-
-  if (config.DON_TORRENT_USE_ONION) {
-    return new DonTorrentScrapperLocalCache(
-      new DonTorrentOnionScrapper(
-        config.DON_TORRENT_ONION_URL,
-        config.DON_TORRENT_TOR_PROXY || undefined,
-        config.REQUEST_TIMEOUT_MS,
-      ),
-    );
-  }
-
-  return new DonTorrentScrapperLocalCache(
-    new DonTorrentScrapper(
-      config.DON_TORRENT_BASE_URL,
-      config.REQUEST_TIMEOUT_MS,
-      {
+  const scrapper = config.DON_TORRENT_USE_TOR
+    ? new DonTorrentScrapper(base, timeout, {
+        fetch: createTorFetch(config.DON_TORRENT_TOR_PROXY, timeout),
         logger,
-      },
-    ),
-  );
+      })
+    : config.DON_TORRENT_USE_ONION
+      ? new DonTorrentOnionScrapper(
+          config.DON_TORRENT_ONION_URL,
+          config.DON_TORRENT_TOR_PROXY || undefined,
+          timeout,
+        )
+      : new DonTorrentScrapper(base, timeout, { logger });
+
+  return new DonTorrentScrapperLocalCache(scrapper);
 });
 container
   .bind(Token.DONTORRENT_WRAPPER)

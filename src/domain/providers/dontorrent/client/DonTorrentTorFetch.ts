@@ -26,11 +26,9 @@ export function createTorFetch(
 ): TorFetch {
   let dispatcher: Dispatcher = new ProxyAgent(torProxyUrl);
 
-  // Tor CONNECT tunnels go stale between requests: an idle pooled tunnel is
-  // dropped and the next request fails with UND_ERR_SOCKET ("other side
-  // closed") or a timeout. Tearing down the ProxyAgent forces the retry to dial
-  // a fresh tunnel (and often a fresh, faster circuit). Same failure mode and
-  // fix as UndiciTorTransport.
+  // Tor CONNECT tunnels go stale between requests; recreating the ProxyAgent
+  // dials a fresh tunnel (and often a fresh circuit) for the retry. Same stale-
+  // tunnel failure mode and recycle fix as UndiciTorTransport.recycle().
   const recycle = (): void => {
     dispatcher.destroy?.();
     dispatcher = new ProxyAgent(torProxyUrl);

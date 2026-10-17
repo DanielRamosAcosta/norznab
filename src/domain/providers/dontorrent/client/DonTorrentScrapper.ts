@@ -56,12 +56,27 @@ export class DonTorrentScrapper implements DonTorrent {
     this.logger = (options.logger ?? new LoggerNoop()).forClass(
       DonTorrentScrapper.name,
     );
-    this.fetchImpl = options.fetch ?? fetch;
+    this.fetchImpl = this.withDomainObservation(options.fetch ?? fetch);
     this.client = ky.create({
       retry: 0,
       timeout,
       fetch: this.fetchImpl,
     });
+  }
+
+  /**
+   * Wrap a fetch so every response — search, metadata, proof-of-work and
+   * download alike — is checked for a rotated domain in one place, rather than
+   * calling observeDomain() at each call site (and forgetting some). Unlike ky's
+   * afterResponse hook, this sees the real Response before ky clones it, so
+   * `response.url` is intact.
+   */
+  private withDomainObservation(inner: TorFetch): TorFetch {
+    return async (input, init) => {
+      const response = await inner(input, init);
+      this.observeDomain(response.url);
+      return response;
+    };
   }
 
   /**
@@ -75,11 +90,8 @@ export class DonTorrentScrapper implements DonTorrent {
 
   /**
    * Learn a rotated domain from a response. DonTorrent's old domain `301`s to
-   * the new one; ky follows the redirect, so the final `response.url` host
-   * differs from our configured origin. Log it once and adopt the new origin.
-   *
-   * Called on the response object returned by ky (not via an afterResponse hook:
-   * ky clones the response for hooks and the clone loses `url`).
+   * the new one; the transport follows the redirect, so the final `response.url`
+   * host differs from our configured origin. Log it once and adopt the new one.
    */
   private observeDomain(responseUrl: string): void {
     if (!responseUrl) {
@@ -91,7 +103,7 @@ export class DonTorrentScrapper implements DonTorrent {
     } catch {
       return;
     }
-    if (origin && origin !== this.baseUrl) {
+    if (origin !== this.baseUrl) {
       this.logger.warn("DonTorrent domain changed", {
         from: this.baseUrl,
         to: origin,
@@ -112,7 +124,6 @@ export class DonTorrentScrapper implements DonTorrent {
     const response = await this.client.post(this.url("buscar"), {
       body: form,
     });
-    this.observeDomain(response.url);
 
     const html = await response.text();
     const $ = cheerio.load(html);
@@ -166,7 +177,6 @@ export class DonTorrentScrapper implements DonTorrent {
     path: string,
   ): Promise<DonTorrentShowSeasonMetadata> {
     const response = await this.client.get(this.url(path));
-    this.observeDomain(response.url);
     const html = await response.text();
     const $ = cheerio.load(html);
 
@@ -200,7 +210,6 @@ export class DonTorrentScrapper implements DonTorrent {
 
   async getMovieMetadata(path: string): Promise<DonTorrentMovieMetadata> {
     const response = await this.client.get(this.url(path));
-    this.observeDomain(response.url);
     const html = await response.text();
     const $ = cheerio.load(html);
     const downloadButton = $("[data-content-id]").first();
