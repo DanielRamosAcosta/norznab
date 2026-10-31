@@ -1,5 +1,6 @@
 export const TorznabFunction = {
   CAPS: "caps",
+  SEARCH: "search",
   TV_SEARCH: "tvsearch",
   MOVIE: "movie",
 } as const;

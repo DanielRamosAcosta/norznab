@@ -8,6 +8,11 @@ export class GetCapabilitiesHandler {
           {
             searching: [
               {
+                search: {
+                  _attrs: { available: "yes", supportedParams: "q" },
+                },
+              },
+              {
                 "tv-search": {
                   _attrs: {
                     available: "yes",
