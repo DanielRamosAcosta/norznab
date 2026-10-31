@@ -126,3 +126,26 @@ describe("movie", () => {
     expect(data).toContain("Interstellar");
   });
 });
+
+describe("search", () => {
+  it("returns mock data for generic search without query (Prowlarr indexer test)", async () => {
+    const client = testClient(app);
+
+    const response = await client.api.$get({
+      query: {
+        t: "search",
+        cat: "2000,5000",
+        offset: "0",
+        limit: "100",
+        extended: "0",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.text();
+    expect(data).toContain("<?xml");
+    expect(data).toContain("<rss");
+    expect(data).toContain("<channel>");
+    expect(data).toContain("<item>");
+  });
+});
