@@ -7,6 +7,7 @@ import { ProviderSource } from "../ProviderSource.ts";
 import type { TorznabItemMovie } from "../../models/TorznabItemMovie.ts";
 import type { EliteTorrent } from "./client/EliteTorrent.ts";
 import { buildReleaseTitle } from "./buildReleaseTitle.ts";
+import { titleMatchesQuery } from "./titleMatchesQuery.ts";
 import type { Logger } from "../../services/Logger.ts";
 import { LoggerNoop } from "../../services/LoggerNoop.ts";
 
@@ -33,13 +34,21 @@ export class EliteTorrentMovieAdapter implements MovieAdapter {
 
   async findMovie(movieName: string): Promise<TorznabItemMovie[]> {
     const results = await this.eliteTorrent.search(movieName);
+
+    // EliteTorrent's `?s=` search matches any single word, so it returns a lot
+    // of unrelated titles. Keep only those whose title contains every
+    // significant word of the query before paying for the per-release fetch.
+    const relevant = results.filter((result) =>
+      titleMatchesQuery(movieName, result.title),
+    );
     this.logger.debug("findMovie resolving", {
       movieName,
       hits: results.length,
+      relevant: relevant.length,
     });
 
     const items = await mapLimit(
-      results,
+      relevant,
       RESOLVE_CONCURRENCY,
       async (result): Promise<TorznabItemMovie | null> => {
         const release = await this.eliteTorrent
