@@ -14,12 +14,14 @@ import type {
 } from "./models/DonTorrentPageable.ts";
 import type { DonTorrent } from "./DonTorrent.ts";
 import type { TorFetch } from "./DonTorrentTorFetch.ts";
+import type { DonTorrentDomainResolver } from "./DonTorrentDomainResolver.ts";
 import type { Logger } from "../../../services/Logger.ts";
 import { LoggerNoop } from "../../../services/LoggerNoop.ts";
 
 export interface DonTorrentScrapperOptions {
   fetch?: TorFetch;
   logger?: Logger;
+  resolver?: DonTorrentDomainResolver;
 }
 
 export class DonTorrentScrapper implements DonTorrent {
@@ -30,6 +32,7 @@ export class DonTorrentScrapper implements DonTorrent {
   private client: KyInstance;
   private readonly fetchImpl: TorFetch;
   private readonly logger: Logger;
+  private readonly resolver?: DonTorrentDomainResolver;
   private baseUrl: string;
 
   private static readonly PAGE_SIZE = 30;
@@ -43,12 +46,31 @@ export class DonTorrentScrapper implements DonTorrent {
     this.logger = (options.logger ?? new LoggerNoop()).forClass(
       DonTorrentScrapper.name,
     );
+    this.resolver = options.resolver;
     this.fetchImpl = this.withDomainObservation(options.fetch ?? fetch);
     this.client = ky.create({
       retry: 0,
       timeout,
       fetch: this.fetchImpl,
     });
+  }
+
+  // Authoritative domain from privtr.ee (cached with TTL inside the resolver);
+  // falls back to the current baseUrl (seed, or the last value learned via
+  // observeDomain) when there is no resolver or it fails.
+  private async getBaseUrl(): Promise<string> {
+    if (!this.resolver) {
+      return this.baseUrl;
+    }
+    try {
+      return await this.resolver.resolve();
+    } catch (error) {
+      this.logger.warn(
+        "Failed to resolve DonTorrent domain from privtr.ee, using fallback",
+        { err: error, baseUrl: this.baseUrl },
+      );
+      return this.baseUrl;
+    }
   }
 
   private withDomainObservation(inner: TorFetch): TorFetch {
@@ -59,8 +81,8 @@ export class DonTorrentScrapper implements DonTorrent {
     };
   }
 
-  private url(pathOrName: string): string {
-    return new URL(pathOrName, `${this.baseUrl}/`).href;
+  private async url(pathOrName: string): Promise<string> {
+    return new URL(pathOrName, `${await this.getBaseUrl()}/`).href;
   }
 
   private observeDomain(responseUrl: string): void {
@@ -91,7 +113,7 @@ export class DonTorrentScrapper implements DonTorrent {
     form.append("Buscar", "Buscar");
     form.append("p", (page + 1).toString()); // API is 1-indexed
 
-    const response = await this.client.post(this.url("buscar"), {
+    const response = await this.client.post(await this.url("buscar"), {
       body: form,
     });
 
@@ -146,7 +168,7 @@ export class DonTorrentScrapper implements DonTorrent {
   async getShowSeasonMetadata(
     path: string,
   ): Promise<DonTorrentShowSeasonMetadata> {
-    const response = await this.client.get(this.url(path));
+    const response = await this.client.get(await this.url(path));
     const html = await response.text();
     const $ = cheerio.load(html);
 
@@ -179,7 +201,7 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   async getMovieMetadata(path: string): Promise<DonTorrentMovieMetadata> {
-    const response = await this.client.get(this.url(path));
+    const response = await this.client.get(await this.url(path));
     const html = await response.text();
     const $ = cheerio.load(html);
     const downloadButton = $("[data-content-id]").first();
@@ -214,7 +236,7 @@ export class DonTorrentScrapper implements DonTorrent {
     table: string,
   ): Promise<string> {
     const generateResponse = await this.client.post(
-      this.url("api_validate_pow.php"),
+      await this.url("api_validate_pow.php"),
       {
         json: {
           action: "generate",
@@ -238,13 +260,16 @@ export class DonTorrentScrapper implements DonTorrent {
   }
 
   private async validateChallenge(challenge: string, nonce: number) {
-    const response = await this.client.post(this.url("api_validate_pow.php"), {
-      json: {
-        action: "validate",
-        challenge: challenge,
-        nonce: nonce,
+    const response = await this.client.post(
+      await this.url("api_validate_pow.php"),
+      {
+        json: {
+          action: "validate",
+          challenge: challenge,
+          nonce: nonce,
+        },
       },
-    });
+    );
 
     const data = await response.json<{
       success: boolean;
