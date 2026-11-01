@@ -3,6 +3,7 @@ import { config } from "./config.ts";
 import { Token } from "../domain/Token.ts";
 import { TMDB } from "../domain/clients/tmdb/TMDB.ts";
 import { DonTorrentScrapper } from "../domain/providers/dontorrent/client/DonTorrentScrapper.ts";
+import { DonTorrentDomainResolver } from "../domain/providers/dontorrent/client/DonTorrentDomainResolver.ts";
 import { DonTorrentOnionScrapper } from "../domain/providers/dontorrent/client/DonTorrentOnionScrapper.ts";
 import { createTorFetch } from "../domain/providers/dontorrent/client/DonTorrentTorFetch.ts";
 import { DonTorrentWrapper } from "../domain/providers/dontorrent/DonTorrentWrapper.ts";
@@ -42,6 +43,11 @@ container.bind(Token.DONTORRENT_SCRAPPER).toDynamicValue(async (context) => {
     ? new DonTorrentScrapper(base, timeout, {
         fetch: createTorFetch(config.DON_TORRENT_TOR_PROXY, timeout),
         logger,
+        resolver: new DonTorrentDomainResolver({
+          torProxyUrl: config.DON_TORRENT_TOR_PROXY,
+          timeoutMs: timeout,
+          logger,
+        }),
       })
     : config.DON_TORRENT_USE_ONION
       ? new DonTorrentOnionScrapper(
