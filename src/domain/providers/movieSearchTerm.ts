@@ -1,6 +1,6 @@
 /**
  * Reduces a movie title to its main title for sources whose search matches
- * strictly (DonTorrent, wolfmax4k, MarcianoTorrent). A Spanish subtitle after a
+ * strictly (DonTorrent). A Spanish subtitle after a
  * ":" or ". " rarely appears in the release name, so searching the full title
  * (e.g. "Sin City: Ciudad del pecado", "Stargate. Puerta a las estrellas")
  * returns nothing on those sites. Querying the main title returns the release,

@@ -119,20 +119,29 @@ handlers via inversify tokens: movie providers bind `Token.MOVIE_ADAPTER`
 source is: implement the adapter(s) + bind them in `container.ts`. Each adapter
 exposes a `source` slug (`ProviderSource`); the search handlers select sources by
 the Torznab `apikey` via `selectBySource` — the key must equal a source slug
-("dontorrent", "marcianotorrent", "wolfmax4k", "elitetorrent") to return that
-source's results; a missing or unknown key returns nothing. So each source is its
-own indexer: register one Torznab indexer per source (same server, distinct API
-key). Current sources: DonTorrent, MarcianoTorrent, EliteTorrent (movies),
-wolfmax4k (movies + series).
+("dontorrent", "elitetorrent") to return that source's results; a missing or
+unknown key returns nothing. So each source is its own indexer: register one
+Torznab indexer per source (same server, distinct API key). Current sources:
+DonTorrent (movies + series), EliteTorrent (movies).
+
+> **History.** MarcianoTorrent (website taken down) and wolfmax4k (migrated to
+> `wolftorrent.com` with Cloudflare-Turnstile-gated downloads, not solvable
+> server-side) were both removed in 2026-11. DonTorrent used to run over Tor
+> (clearnet + onion) to dodge an ISP block / Cloudflare 429s; that was also
+> dropped — the current domain (`dontorrent.tips`) is reachable on plain TCP, so
+> it now uses a direct `fetch` (`DonTorrentDomainResolver` via privtr.ee and the
+> onion transport are gone; the domain is still learned from 301s via
+> `observeDomain`).
 
 The HTTP/3 transport (`QuicoHttp3Client`) is shared at
 `src/domain/providers/http3/Http3Client.ts` — used by any SNI-blocked source
-(wolfmax4k, EliteTorrent).
+(currently only EliteTorrent).
 
 ### EliteTorrent (`src/domain/providers/elitetorrent/`)
 
-WordPress site, movies only. SNI-blocked on TCP (plain `fetch` → `ECONNRESET`)
-like wolfmax, so it uses the shared HTTP/3 transport. Search is
+WordPress site, movies only. SNI-blocked on TCP (plain `fetch` → `ECONNRESET`),
+so it uses the shared HTTP/3 transport — QUIC/UDP is not filtered by the DPI.
+Search is
 `GET /?s=<query>`; results are poster anchors under `.imagen`. Downloads sit
 behind an `acortame-esto.com/s.php?i=<token>` ad-gate, but the token is a
 client-side obfuscation — `base64`×N wrapping a `ROT13` payload — of the real
@@ -147,45 +156,6 @@ from the detail-page technical block (`Fecha:`/`Calidad:`/`Formato:`/`Idioma:`,
 e.g. `Dune: Parte dos 2024 720p MP4 Spanish`), mapping the quality through the
 shared `providers/utils/toTorznabFormat.ts`. Note the `Fecha:` value comes as
 `DD-MM-YYYY` on torrent pages but `YYYY-MM-DD` on film sheets.
-
-### wolfmax4k (`src/domain/providers/wolfmax4k/`)
-
-> **⚠️ BROKEN — source migrated (2026-10).** `wolfmax4k.com/` now `301`s (empty
-> body) to **`wolftorrent.com`**, which dropped the entire flow described below:
-> no CSRF token, no `POST /mvc/controllers/data.find.php` (now `404`). The new
-> site is a plain server-rendered WordPress-style listing — search is
-> `GET /buscar?q=<query>` (TCP works, **no SNI block**, so HTTP/3 is not even
-> needed) returning `article.wolf-card` results. **But downloads are now gated
-> by Cloudflare Turnstile**: the `.torrent` is only released after
-> `POST /api/descargas {action:"generate"}` → solve a Turnstile/hCaptcha →
-> `POST {action:"validate", "cf-turnstile-response"}` → `download_url`. That
-> captcha is not solvable server-side (would need a paid solver or a headless
-> browser), and direct `/torrents/...` paths `404`. So the scraper is NOT
-> reworked for wolftorrent; instead `Wolfmax4kScrapper.search` now **degrades to
-> an empty page instead of throwing** when the token lookup fails, so a dead
-> source can't take down the whole Torznab response. Reworking it would mean
-> scraping `GET /buscar?q=` for titles (easy) but has no viable download path
-> until the Turnstile gate is handled. The notes below describe the OLD flow.
-
-wolfmax4k needs a bespoke transport and download flow; the details are
-non-obvious:
-
-- **HTTP/3 transport (`quico`).** wolfmax4k is blocked at the ISP level by
-  plaintext-SNI DPI on TCP (a TLS reset on the ClientHello), so `fetch`/`ky`/curl
-  fail with `ECONNRESET`. QUIC (UDP/443) is not filtered, so wolfmax4k requests
-  go over HTTP/3 via the pure-JS `quico` client (`client/Http3Client.ts`). This
-  is the reason this provider does not use `ky` like the others.
-- **Search** is `POST /mvc/controllers/data.find.php` (multipart: `token`,
-  `cidr`, `c`, `q`, `l`, `pg`; needs a `Referer` and a CSRF `token` scraped from
-  any page). It returns JSON (`data.datafinds`), not HTML.
-- **Movie vs episode** is decided from the release name, not the `guid` prefix
-  (movies also appear under `online/`): episodes carry a `[Cap.SEE]` marker
-  (`Cap.309` -> S3E09), movies carry a `(YYYY)` year.
-- **Download** goes through the `enlacito.com` ad-gate. `client/EnlacitoResolver.ts`
-  replays it without a browser: `GET s.php?i=<token>` (Referer wolfmax) sets a
-  `PHPSESSID`; `POST /` with that cookie renders `var link_out`, a GibberishAES
-  `Salted__` payload (`client/decodeLink.ts`, static key) that decrypts to the
-  signed `.torrent` URL on wolfmax4k, downloaded over HTTP/3.
 
 ## Docker Configuration Notes
 

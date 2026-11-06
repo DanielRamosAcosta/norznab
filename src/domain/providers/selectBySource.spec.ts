@@ -4,8 +4,7 @@ import { ProviderSource } from "./ProviderSource.ts";
 
 const adapters = [
   { source: ProviderSource.DONTORRENT, id: "don" },
-  { source: ProviderSource.MARCIANOTORRENT, id: "marciano" },
-  { source: ProviderSource.WOLFMAX4K, id: "wolf" },
+  { source: ProviderSource.ELITETORRENT, id: "elite" },
 ];
 
 describe("selectBySource", () => {
@@ -24,17 +23,15 @@ describe("selectBySource", () => {
 
   it("keeps only the matching source for a known slug", () => {
     expect(selectBySource(adapters, "dontorrent")).toEqual([adapters[0]]);
-    expect(selectBySource(adapters, "wolfmax4k")).toEqual([adapters[2]]);
+    expect(selectBySource(adapters, "elitetorrent")).toEqual([adapters[1]]);
   });
 
   it("is case- and whitespace-insensitive on the slug", () => {
-    expect(selectBySource(adapters, "  MarcianoTorrent  ")).toEqual([
-      adapters[1],
-    ]);
+    expect(selectBySource(adapters, "  EliteTorrent  ")).toEqual([adapters[1]]);
   });
 
   it("returns nothing when a known source has no bound adapter", () => {
-    const onlyWolf = [{ source: ProviderSource.WOLFMAX4K, id: "wolf" }];
-    expect(selectBySource(onlyWolf, "dontorrent")).toEqual([]);
+    const onlyElite = [{ source: ProviderSource.ELITETORRENT, id: "elite" }];
+    expect(selectBySource(onlyElite, "dontorrent")).toEqual([]);
   });
 });

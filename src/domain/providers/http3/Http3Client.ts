@@ -18,9 +18,9 @@ export interface Http3RequestOptions {
 }
 
 /**
- * HTTP client abstraction used to reach wolfmax4k over HTTP/3 (QUIC).
+ * HTTP client abstraction used to reach EliteTorrent over HTTP/3 (QUIC).
  *
- * wolfmax4k is blocked at the ISP level via plaintext-SNI DPI on TCP, which
+ * EliteTorrent is blocked at the ISP level via plaintext-SNI DPI on TCP, which
  * resets any TLS handshake to that domain. QUIC (UDP/443) is not affected, so
  * we speak HTTP/3 to bypass the block without a browser or curl.
  */

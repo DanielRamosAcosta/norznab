@@ -12,12 +12,10 @@ Built with Hono on Node.js 24 (native TypeScript, ES modules).
 Each source is scraped by its own adapter. Because several sites block plain HTTP
 at the network level, some use bespoke transports:
 
-| Source           | Content         | Transport                                |
-| ---------------- | --------------- | ---------------------------------------- |
-| **DonTorrent**   | movies + series | Tor `.onion` (clearnet is SNI-blocked)   |
-| **wolfmax4k**    | movies + series | HTTP/3 / QUIC (TCP is SNI-blocked)       |
-| **EliteTorrent** | movies          | HTTP/3 / QUIC (TCP is SNI-blocked)       |
-| MarcianoTorrent  | movies          | plain HTTP — currently Cloudflare-walled |
+| Source           | Content         | Transport                          |
+| ---------------- | --------------- | ---------------------------------- |
+| **DonTorrent**   | movies + series | plain `fetch` (HTTPS)              |
+| **EliteTorrent** | movies          | HTTP/3 / QUIC (TCP is SNI-blocked) |
 
 ## One indexer per source (API key = source)
 
@@ -29,12 +27,10 @@ nothing.
 So in Radarr/Sonarr you add **one Torznab indexer per source**, all pointing at
 the same norznab server, each with a different API key:
 
-| API key           | Queries         |
-| ----------------- | --------------- |
-| `dontorrent`      | DonTorrent      |
-| `wolfmax4k`       | wolfmax4k       |
-| `elitetorrent`    | EliteTorrent    |
-| `marcianotorrent` | MarcianoTorrent |
+| API key        | Queries      |
+| -------------- | ------------ |
+| `dontorrent`   | DonTorrent   |
+| `elitetorrent` | EliteTorrent |
 
 This keeps each source separate in the \*arr UI (independent enable/disable,
 priority, history and failure handling), which works much better than one
@@ -64,18 +60,13 @@ docker compose up
 
 Environment variables (see `src/infrastructure/config.ts`):
 
-| Variable                    | Default                        | Notes                                           |
-| --------------------------- | ------------------------------ | ----------------------------------------------- |
-| `TMDB_API_KEY`              | _required_                     | Resolves tmdbid → title for searches            |
-| `DON_TORRENT_BASE_URL`      | _required_                     | Clearnet base (used when the onion is off)      |
-| `MARCIANO_TORRENT_BASE_URL` | _required_                     |                                                 |
-| `DON_TORRENT_USE_ONION`     | `false`                        | Route DonTorrent over Tor                       |
-| `DON_TORRENT_TOR_PROXY`     | `""`                           | Tor HTTP proxy (`HTTPTunnelPort`) for the onion |
-| `DON_TORRENT_ONION_URL`     | the known `.onion`             |                                                 |
-| `ELITE_TORRENT_BASE_URL`    | `https://www.elitetorrent.com` |                                                 |
-| `WOLFMAX4K_BASE_URL`        | `https://wolfmax4k.com`        |                                                 |
-| `WOLFMAX4K_HTTP_TIMEOUT_MS` | `15000`                        | Per-request timeout for the HTTP/3 sources      |
-| `REQUEST_TIMEOUT_MS`        | `30000`                        |                                                 |
+| Variable                        | Default                        | Notes                                     |
+| ------------------------------- | ------------------------------ | ----------------------------------------- |
+| `TMDB_API_KEY`                  | _required_                     | Resolves tmdbid → title for searches      |
+| `DON_TORRENT_BASE_URL`          | `https://dontorrent.tips`      | Seed domain; updated from 301s at runtime |
+| `ELITE_TORRENT_BASE_URL`        | `https://www.elitetorrent.com` |                                           |
+| `ELITE_TORRENT_HTTP_TIMEOUT_MS` | `15000`                        | Per-request timeout for the HTTP/3 source |
+| `REQUEST_TIMEOUT_MS`            | `30000`                        |                                           |
 
 ## Development
 

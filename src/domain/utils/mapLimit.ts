@@ -2,7 +2,7 @@
  * Maps `items` through `fn` with at most `limit` promises in flight at once,
  * preserving input order in the result.
  *
- * Used to cap the wolfmax4k HTTP/3 fan-out: resolving every edition at once
+ * Used to cap the EliteTorrent HTTP/3 fan-out: resolving every edition at once
  * stresses the QUIC layer (cold sessions stall / "All protocols failed"), so a
  * bounded concurrency keeps the burst small.
  */

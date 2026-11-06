@@ -13,8 +13,8 @@ import type {
 /**
  * Scrapes EliteTorrent over HTTP/3.
  *
- * Like wolfmax4k, EliteTorrent is SNI-blocked on TCP (a plain `fetch` is reset
- * with ECONNRESET) but reachable over QUIC, so it shares the HTTP/3 transport.
+ * EliteTorrent is SNI-blocked on TCP (a plain `fetch` is reset with
+ * ECONNRESET) but reachable over QUIC, so it uses the HTTP/3 transport.
  * Downloads are hidden behind an `acortame-esto.com` ad-gate, but the token is a
  * purely client-side obfuscation of the real magnet/torrent (see
  * {@link decodeEliteLink}), so the ad-gate is bypassed by decoding locally.

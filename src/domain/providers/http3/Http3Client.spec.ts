@@ -25,7 +25,7 @@ describe("QuicoHttp3Client stale-connection recovery", () => {
     const client = new QuicoHttp3Client(15, undefined, 2);
 
     await expect(
-      client.send({ hostname: "wolfmax4k.com", path: "/" }),
+      client.send({ hostname: "www.elitetorrent.com", path: "/" }),
     ).rejects.toThrow(/timed out/);
 
     // On a timeout it tears down quico's global agent so the retry reconnects.

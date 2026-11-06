@@ -2,9 +2,9 @@ import type { ResolutionContext } from "inversify";
 import { Token } from "../../Token.ts";
 import type { DonTorrent } from "./client/DonTorrent.ts";
 
-// DonTorrent sits behind Cloudflare over a single Tor circuit, so hammering it
-// with back-to-back page requests invites a 429. A small gap between pages and
-// a depth cap keep the pagination from turning into a burst.
+// DonTorrent sits behind Cloudflare, so hammering it with back-to-back page
+// requests invites a 429. A small gap between pages and a depth cap keep the
+// pagination from turning into a burst.
 const PAGE_DELAY_MS = 500;
 const MAX_PAGES = 20;
 
